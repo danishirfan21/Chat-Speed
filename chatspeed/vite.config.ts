@@ -10,7 +10,12 @@ const manifest = defineManifest({
   content_scripts: [
     {
       js: ['src/content.tsx'],
-      matches: ['https://chatgpt.com/*', 'https://chat.jules.ai/*'],
+      matches: [
+        'https://*.chatgpt.com/*',
+        'https://*.openai.com/*',
+        'https://chat.jules.ai/*'
+      ],
+      run_at: 'document_start',
     },
   ],
 })
