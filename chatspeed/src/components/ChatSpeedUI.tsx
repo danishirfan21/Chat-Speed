@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 import { MessageItem } from './MessageItem'
 import { Virtuoso } from 'react-virtuoso'
@@ -12,63 +12,105 @@ export const ChatSpeedUI = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [showOlderMessages, setShowOlderMessages] = useState(false);
 
+  const updateMessagesFromNodes = useCallback((nodes: HTMLElement[]) => {
+    if (nodes.length === 0) return;
+
+    setMessages((prevMessages) => {
+      const messageMap = new Map(prevMessages.map(m => [m.id, m]));
+      let changed = false;
+
+      nodes.forEach((turnEl) => {
+        const id = turnEl.getAttribute('data-testid') || '';
+        if (!id) return;
+
+        // Skip collapsed nodes to avoid overwriting state with placeholder text
+        if (turnEl.dataset.collapsed === "true") return;
+
+        const isUser = turnEl.querySelector('[aria-label="You said"]') ||
+                       turnEl.innerText.toLowerCase().startsWith('you');
+
+        const contentEl = turnEl.querySelector('.prose') as HTMLElement;
+        const text = contentEl ? contentEl.innerText.trim() : turnEl.innerText.trim();
+
+        // Detect streaming status via DOM indicators
+        const isStreaming = !!turnEl.querySelector('.result-streaming') ||
+                            !!turnEl.querySelector('path[d*="M1 1v14h14V1H1z"]'); // ChatGPT cursor icon
+
+        const existing = messageMap.get(id);
+        if (!existing || existing.content !== text || existing.isStreaming !== isStreaming) {
+          messageMap.set(id, {
+            id,
+            role: isUser ? 'user' : 'assistant',
+            content: text,
+            createdAt: existing?.createdAt || Date.now(),
+            isStreaming
+          });
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+      }
+      return prevMessages;
+    });
+  }, []);
+
   useEffect(() => {
-    console.log("🚀 ChatSpeed: Content script initialized.");
+    console.log("🚀 ChatSpeed: Incremental scraping initialized.");
 
-    const scrapeMessages = () => {
-      const turns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
-      if (turns.length === 0) return;
+    // Initial full scan
+    const initialTurns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+    updateMessagesFromNodes(Array.from(initialTurns) as HTMLElement[]);
 
-      setMessages((prevMessages) => {
-        const messageMap = new Map(prevMessages.map(m => [m.id, m]));
-        let changed = false;
+    const observer = new MutationObserver((mutations) => {
+      const nodesToUpdate = new Set<HTMLElement>();
 
-        turns.forEach((turn) => {
-          const turnEl = turn as HTMLElement;
-          const id = turnEl.getAttribute('data-testid') || '';
-          if (!id) return;
-
-          // If the element is collapsed, its DOM doesn't reflect actual content.
-          // Since we already have the state in memory, don't overwrite it with "collapsed" text.
-          if (turnEl.dataset.collapsed === "true") return;
-
-          const isUser = turnEl.querySelector('[aria-label="You said"]') ||
-                         turnEl.innerText.toLowerCase().startsWith('you');
-
-          const contentEl = turnEl.querySelector('.prose') as HTMLElement;
-          const text = contentEl ? contentEl.innerText.trim() : turnEl.innerText.trim();
-
-          // Detect streaming status (typical cursor or specialized class)
-          const isStreaming = !!turnEl.querySelector('.result-streaming') ||
-                              !!turnEl.querySelector('path[d*="M1 1v14h14V1H1z"]'); // ChatGPT cursor icon
-
-          const existing = messageMap.get(id);
-          if (!existing || existing.content !== text || existing.isStreaming !== isStreaming) {
-            messageMap.set(id, {
-              id,
-              role: isUser ? 'user' : 'assistant',
-              content: text,
-              createdAt: existing?.createdAt || Date.now(),
-              isStreaming
-            });
-            changed = true;
+      mutations.forEach((mutation) => {
+        // Handle added nodes
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof HTMLElement) {
+            if (node.matches('[data-testid^="conversation-turn-"]')) {
+              nodesToUpdate.add(node);
+            } else {
+              const nestedTurns = node.querySelectorAll('[data-testid^="conversation-turn-"]');
+              nestedTurns.forEach(t => nodesToUpdate.add(t as HTMLElement));
+            }
           }
         });
 
-        if (changed) {
-          return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+        // Handle content updates (streaming)
+        const target = mutation.target as HTMLElement;
+        const closestTurn = target.closest?.('[data-testid^="conversation-turn-"]') as HTMLElement;
+        if (closestTurn) {
+          nodesToUpdate.add(closestTurn);
         }
-        return prevMessages;
       });
-    };
 
-    scrapeMessages();
+      if (nodesToUpdate.size > 0) {
+        updateMessagesFromNodes(Array.from(nodesToUpdate));
+      }
+    });
+
     const targetNode = document.querySelector('main') || document.body;
-    const observer = new MutationObserver(() => scrapeMessages());
-    observer.observe(targetNode, { childList: true, subtree: true, characterData: true });
+    observer.observe(targetNode, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
 
-    return () => observer.disconnect();
-  }, []);
+    // Periodic full resync fallback (every 60s)
+    const resyncInterval = setInterval(() => {
+      console.log("🔄 ChatSpeed: Periodic full resync...");
+      const allTurns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+      updateMessagesFromNodes(Array.from(allTurns) as HTMLElement[]);
+    }, 60000);
+
+    return () => {
+      observer.disconnect();
+      clearInterval(resyncInterval);
+    };
+  }, [updateMessagesFromNodes]);
 
   // Handle Resizing
   useEffect(() => {
