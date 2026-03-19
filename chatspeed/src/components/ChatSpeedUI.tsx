@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 import { MessageItem } from './MessageItem'
 import { Virtuoso } from 'react-virtuoso'
+import { pruneOldMessages } from '../utils/domPruning'
 
 const COLLAPSE_THRESHOLD = 100;
 const MAX_MESSAGES = 500;
@@ -79,6 +80,9 @@ export const ChatSpeedUI = () => {
             }
           }
         }
+
+        // Optimization: pruning trigger (incremental)
+        pruneOldMessages(MAX_MESSAGES);
 
         return newMessages;
       }
