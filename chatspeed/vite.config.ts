@@ -15,7 +15,7 @@ const manifest = defineManifest({
         'https://*.openai.com/*',
         'https://chat.jules.ai/*'
       ],
-      run_at: 'document_start',
+      run_at: 'document_idle',
     },
   ],
 })

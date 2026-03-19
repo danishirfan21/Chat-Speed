@@ -17,9 +17,13 @@ export const ChatSpeedUI = () => {
   const updateMessagesFromNodes = useCallback((nodes: HTMLElement[]) => {
     if (nodes.length === 0) return;
 
+    // 🥉 Log every trigger
+    console.log('[ChatSpeed] updateMessagesFromNodes triggered, nodes:', nodes.length);
+
     setMessages((prevMessages) => {
-      const messageMap = new Map(prevMessages.map(m => [m.id, m]));
+      const start = performance.now();
       let changed = false;
+      const nextMessages = [...prevMessages]; // Shallow copy array
 
       nodes.forEach((turnEl) => {
         const id = turnEl.getAttribute('data-testid') || '';
@@ -28,23 +32,39 @@ export const ChatSpeedUI = () => {
         // Skip collapsed nodes to avoid overwriting state with placeholder text
         if (turnEl.dataset.collapsed === "true") return;
 
-        const isUser = turnEl.querySelector('[aria-label="You said"]') ||
-                       turnEl.innerText.toLowerCase().startsWith('you');
-
+        // Performance: Use textContent instead of innerText to avoid layout reflows
         const contentEl = turnEl.querySelector('.prose') as HTMLElement;
-        const text = contentEl ? contentEl.innerText.trim() : turnEl.innerText.trim();
+        const text = contentEl 
+          ? contentEl.textContent?.trim() || '' 
+          : turnEl.textContent?.trim() || '';
+
+        const isUser = turnEl.querySelector('[aria-label="You said"]') ||
+                       (turnEl.textContent && turnEl.textContent.toLowerCase().startsWith('you'));
 
         // Detect streaming status via DOM indicators
         const isStreaming = !!turnEl.querySelector('.result-streaming') ||
-                            !!turnEl.querySelector('path[d*="M1 1v14h14V1H1z"]'); // ChatGPT cursor icon
+                            !!turnEl.querySelector('path[d*="M1 1v14h14V1H1z"]');
 
-        const existing = messageMap.get(id);
-        if (!existing || existing.content !== text || existing.isStreaming !== isStreaming) {
-          messageMap.set(id, {
+        const existingIndex = nextMessages.findIndex(m => m.id === id);
+
+        if (existingIndex !== -1) {
+          const existing = nextMessages[existingIndex];
+          if (existing.content !== text || existing.isStreaming !== isStreaming) {
+            // Update ONLY the changed message
+            nextMessages[existingIndex] = {
+              ...existing,
+              content: text,
+              isStreaming
+            };
+            changed = true;
+          }
+        } else {
+          // Append new message incrementally
+          nextMessages.push({
             id,
             role: isUser ? 'user' : 'assistant',
             content: text,
-            createdAt: existing?.createdAt || Date.now(),
+            createdAt: Date.now(),
             isStreaming
           });
           changed = true;
@@ -52,40 +72,21 @@ export const ChatSpeedUI = () => {
       });
 
       if (changed) {
-        let newMessages = Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+        let finalMessages = nextMessages;
 
-        // Cap message history to prevent unbounded memory growth
-        if (newMessages.length > MAX_MESSAGES) {
-          // Identify indices of streaming messages to ensure they are NOT removed
-          const streamingIndices = new Set(
-            newMessages
-              .map((m, i) => (m.isStreaming ? i : -1))
-              .filter((i) => i !== -1)
-          );
-
-          // Slice only if it doesn't remove a streaming message.
-          // Since streaming is usually at the end, this is mostly safe.
-          const sliceStart = newMessages.length - MAX_MESSAGES;
-          const removedIndices = Array.from({ length: sliceStart }, (_, i) => i);
-
-          const safeToRemove = removedIndices.filter(i => !streamingIndices.has(i));
-
-          if (safeToRemove.length > 0) {
-            // Filter out oldest non-streaming messages
-            const toRemoveIds = new Set(safeToRemove.map(i => newMessages[i].id));
-            newMessages = newMessages.filter(m => !toRemoveIds.has(m.id));
-            // Ensure we didn't accidentally keep too many if all were streaming (unlikely)
-            if (newMessages.length > MAX_MESSAGES) {
-               newMessages = newMessages.slice(-MAX_MESSAGES);
-            }
-          }
+        // Cap message history simply (memory bounded)
+        if (finalMessages.length > MAX_MESSAGES) {
+           finalMessages = finalMessages.slice(-MAX_MESSAGES);
         }
 
         // Optimization: pruning trigger (incremental)
         pruneOldMessages(MAX_MESSAGES);
 
-        return newMessages;
+        const duration = performance.now() - start;
+        console.log(`[ChatSpeed] updateMessages took ${duration.toFixed(2)}ms`);
+        return finalMessages;
       }
+
       return prevMessages;
     });
   }, []);
@@ -98,6 +99,8 @@ export const ChatSpeedUI = () => {
     updateMessagesFromNodes(Array.from(initialTurns) as HTMLElement[]);
 
     const observer = new MutationObserver((mutations) => {
+      // 🥉 Streaming frequency — watch for 20+/sec = bottleneck
+      console.count('[ChatSpeed] Mutation events');
       const nodesToUpdate = new Set<HTMLElement>();
 
       mutations.forEach((mutation) => {
@@ -137,11 +140,19 @@ export const ChatSpeedUI = () => {
     const resyncInterval = setInterval(() => {
       console.log("🔄 ChatSpeed: Periodic full resync...");
       const allTurns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+      console.log('[ChatSpeed] Resync — total turns found:', allTurns.length);
       updateMessagesFromNodes(Array.from(allTurns) as HTMLElement[]);
     }, 60000);
 
+    // 🧠 Scroll performance indicator
+    const scrollHandler = () => {
+      console.log('[ChatSpeed] scrolling');
+    };
+    window.addEventListener('scroll', scrollHandler);
+
     return () => {
       observer.disconnect();
+      window.removeEventListener('scroll', scrollHandler);
       clearInterval(resyncInterval);
     };
   }, [updateMessagesFromNodes]);

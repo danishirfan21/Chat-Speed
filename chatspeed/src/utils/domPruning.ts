@@ -1,6 +1,13 @@
 export function pruneOldMessages(safeCount: number = 50) {
   const messages = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+
+  // 🥇 DOM size check — MOST IMPORTANT log
+  console.log('[ChatSpeed] DOM nodes:', messages.length);
+
   if (messages.length <= safeCount) return;
+
+  console.time('[ChatSpeed] pruneOldMessages');
+  let prunedCount = 0;
 
   const cutoffIndex = messages.length - safeCount;
 
@@ -30,6 +37,15 @@ export function pruneOldMessages(safeCount: number = 50) {
     // Using replaceChildren for better performance than innerHTML = ""
     el.replaceChildren(placeholder);
 
-    console.log(`⚡ ChatSpeed: Pruned message at index ${i} (zero-reflow).`);
+    prunedCount++;
   }
+
+  // 🥈 Pruning effectiveness — should be large first run, tiny after
+  console.log('[ChatSpeed] Pruned this run:', prunedCount);
+
+  // 🥇 DOM size after pruning
+  const totalNodesAfter = document.querySelectorAll('[data-testid^="conversation-turn-"]').length;
+  console.log('[ChatSpeed] DOM nodes after prune:', totalNodesAfter);
+
+  console.timeEnd('[ChatSpeed] pruneOldMessages');
 }
