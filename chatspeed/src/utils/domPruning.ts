@@ -17,22 +17,19 @@ export function pruneOldMessages(safeCount: number = 50) {
 
     if (isStreaming) continue;
 
-    // Capture current height once per message to preserve layout
-    const rect = el.getBoundingClientRect();
-    const height = rect.height;
-
-    // Collapse and replace content
-    el.style.height = `${height}px`;
+    // PERFORMANCE: Removed getBoundingClientRect() and dynamic height assignment.
+    // We prioritize zero-reflow performance over exact height preservation.
+    el.style.minHeight = "44px"; // Fixed small height for layout stability
     el.style.overflow = "hidden";
     el.dataset.collapsed = "true";
 
     const placeholder = document.createElement("div");
     placeholder.textContent = "⚡ Message collapsed for performance";
-    placeholder.style.cssText = "opacity: 0.6; font-size: 12px; padding: 10px; text-align: center; color: #888;";
+    placeholder.style.cssText = "opacity: 0.6; font-size: 12px; padding: 12px; text-align: center; color: #888;";
 
-    el.innerHTML = "";
-    el.appendChild(placeholder);
+    // Using replaceChildren for better performance than innerHTML = ""
+    el.replaceChildren(placeholder);
 
-    console.log(`⚡ ChatSpeed: Pruned message at index ${i}. Saved ~${height}px of DOM content.`);
+    console.log(`⚡ ChatSpeed: Pruned message at index ${i} (zero-reflow).`);
   }
 }
