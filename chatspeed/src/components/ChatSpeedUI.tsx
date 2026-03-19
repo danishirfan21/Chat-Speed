@@ -28,6 +28,10 @@ export const ChatSpeedUI = () => {
           const id = turnEl.getAttribute('data-testid') || '';
           if (!id) return;
 
+          // If the element is collapsed, its DOM doesn't reflect actual content.
+          // Since we already have the state in memory, don't overwrite it with "collapsed" text.
+          if (turnEl.dataset.collapsed === "true") return;
+
           const isUser = turnEl.querySelector('[aria-label="You said"]') ||
                          turnEl.innerText.toLowerCase().startsWith('you');
 
