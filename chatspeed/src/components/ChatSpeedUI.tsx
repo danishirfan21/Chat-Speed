@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { ChatMessage } from '../types'
 import { MessageItem } from './MessageItem'
 import { Virtuoso } from 'react-virtuoso'
 import { pruneOldMessages } from '../utils/domPruning'
+import { throttle } from '../utils/throttle'
 
 const COLLAPSE_THRESHOLD = 100;
 const MAX_MESSAGES = 500;
@@ -29,7 +30,7 @@ export const ChatSpeedUI = () => {
         if (turnEl.dataset.collapsed === "true") return;
 
         const isUser = turnEl.querySelector('[aria-label="You said"]') ||
-                       turnEl.innerText.toLowerCase().startsWith('you');
+                       turnEl.textContent?.toLowerCase().startsWith('you');
 
         const contentEl = turnEl.querySelector('.prose') as HTMLElement;
         const text = contentEl ? contentEl.innerText.trim() : turnEl.innerText.trim();
@@ -90,6 +91,20 @@ export const ChatSpeedUI = () => {
     });
   }, []);
 
+  const pendingNodesRef = useRef<Set<HTMLElement>>(new Set());
+
+  const processPendingUpdates = useCallback(() => {
+    if (pendingNodesRef.current.size === 0) return;
+    const nodes = Array.from(pendingNodesRef.current);
+    pendingNodesRef.current.clear();
+    updateMessagesFromNodes(nodes);
+  }, [updateMessagesFromNodes]);
+
+  const throttledProcess = useMemo(
+    () => throttle(processPendingUpdates, 200),
+    [processPendingUpdates]
+  );
+
   useEffect(() => {
     console.log("🚀 ChatSpeed: Incremental scraping initialized.");
 
@@ -98,31 +113,46 @@ export const ChatSpeedUI = () => {
     updateMessagesFromNodes(Array.from(initialTurns) as HTMLElement[]);
 
     const observer = new MutationObserver((mutations) => {
-      const nodesToUpdate = new Set<HTMLElement>();
+      let isHighPriority = false;
 
       mutations.forEach((mutation) => {
         // Handle added nodes
-        mutation.addedNodes.forEach((node) => {
-          if (node instanceof HTMLElement) {
-            if (node.matches('[data-testid^="conversation-turn-"]')) {
-              nodesToUpdate.add(node);
-            } else {
-              const nestedTurns = node.querySelectorAll('[data-testid^="conversation-turn-"]');
-              nestedTurns.forEach(t => nodesToUpdate.add(t as HTMLElement));
+        if (mutation.addedNodes.length > 0) {
+          isHighPriority = true;
+          mutation.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement) {
+              if (node.matches('[data-testid^="conversation-turn-"]')) {
+                pendingNodesRef.current.add(node);
+              } else {
+                const nestedTurns = node.querySelectorAll('[data-testid^="conversation-turn-"]');
+                nestedTurns.forEach(t => pendingNodesRef.current.add(t as HTMLElement));
+              }
             }
-          }
-        });
+          });
+        }
 
         // Handle content updates (streaming)
         const target = mutation.target as HTMLElement;
         const closestTurn = target.closest?.('[data-testid^="conversation-turn-"]') as HTMLElement;
         if (closestTurn) {
-          nodesToUpdate.add(closestTurn);
+          pendingNodesRef.current.add(closestTurn);
+
+          // Check if streaming just finished for this turn
+          const isStillStreaming = !!closestTurn.querySelector('.result-streaming') ||
+                                   !!closestTurn.querySelector('path[d*="M1 1v14h14V1H1z"]');
+          if (!isStillStreaming) {
+            isHighPriority = true;
+          }
         }
       });
 
-      if (nodesToUpdate.size > 0) {
-        updateMessagesFromNodes(Array.from(nodesToUpdate));
+      if (pendingNodesRef.current.size > 0) {
+        if (isHighPriority) {
+          throttledProcess.cancel();
+          processPendingUpdates();
+        } else {
+          throttledProcess();
+        }
       }
     });
 
@@ -144,7 +174,7 @@ export const ChatSpeedUI = () => {
       observer.disconnect();
       clearInterval(resyncInterval);
     };
-  }, [updateMessagesFromNodes]);
+  }, [updateMessagesFromNodes, processPendingUpdates, throttledProcess]);
 
   // Handle Resizing
   useEffect(() => {
