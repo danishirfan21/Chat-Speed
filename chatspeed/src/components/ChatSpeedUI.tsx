@@ -4,6 +4,7 @@ import { MessageItem } from './MessageItem'
 import { Virtuoso } from 'react-virtuoso'
 
 const COLLAPSE_THRESHOLD = 100;
+const MAX_MESSAGES = 500;
 
 export const ChatSpeedUI = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -50,7 +51,36 @@ export const ChatSpeedUI = () => {
       });
 
       if (changed) {
-        return Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+        let newMessages = Array.from(messageMap.values()).sort((a, b) => a.createdAt - b.createdAt);
+
+        // Cap message history to prevent unbounded memory growth
+        if (newMessages.length > MAX_MESSAGES) {
+          // Identify indices of streaming messages to ensure they are NOT removed
+          const streamingIndices = new Set(
+            newMessages
+              .map((m, i) => (m.isStreaming ? i : -1))
+              .filter((i) => i !== -1)
+          );
+
+          // Slice only if it doesn't remove a streaming message.
+          // Since streaming is usually at the end, this is mostly safe.
+          const sliceStart = newMessages.length - MAX_MESSAGES;
+          const removedIndices = Array.from({ length: sliceStart }, (_, i) => i);
+
+          const safeToRemove = removedIndices.filter(i => !streamingIndices.has(i));
+
+          if (safeToRemove.length > 0) {
+            // Filter out oldest non-streaming messages
+            const toRemoveIds = new Set(safeToRemove.map(i => newMessages[i].id));
+            newMessages = newMessages.filter(m => !toRemoveIds.has(m.id));
+            // Ensure we didn't accidentally keep too many if all were streaming (unlikely)
+            if (newMessages.length > MAX_MESSAGES) {
+               newMessages = newMessages.slice(-MAX_MESSAGES);
+            }
+          }
+        }
+
+        return newMessages;
       }
       return prevMessages;
     });
