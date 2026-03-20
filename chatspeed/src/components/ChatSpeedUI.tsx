@@ -145,29 +145,37 @@ export const ChatSpeedUI = () => {
 
     const knownMessageIds = new Set<string>();
 
-    // Initial optimized scan: process last 50 immediately, others in chunks (background)
-    console.log("🚀 [ChatSpeed] Initial controlled load");
-    const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
-    const initialBatchSize = 50;
-    const start = performance.now();
-    let olderTurns: HTMLElement[] = [];
+    // Initial optimized scan: delay slightly to ensure DOM stabilizes and hydration finishes
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        console.log("🚀 [ChatSpeed] Initial controlled load");
+        const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
+        const initialBatchSize = 50;
+        const start = performance.now();
 
-    // Initialize knownMessageIds with ALL currently existing turns to prevent hydration spikes
-    allTurns.forEach(t => {
-      const id = t.getAttribute('data-testid');
-      if (id) knownMessageIds.add(id);
+        // Initialize knownMessageIds with ALL currently existing turns to prevent hydration spikes
+        allTurns.forEach(t => {
+          const id = t.getAttribute('data-testid');
+          if (id) knownMessageIds.add(id);
+        });
+
+        // STRICTLY enforce partial load: never call updateMessagesFromNodes with the full node list
+        const recentTurns = allTurns.slice(-initialBatchSize);
+        const olderTurns = allTurns.slice(0, -initialBatchSize);
+
+        console.log("[ChatSpeed] Initial nodes selected:", recentTurns.length);
+        updateMessagesFromNodes(recentTurns);
+
+        const end = performance.now();
+        console.log("[ChatSpeed] Initial load time:", (end - start).toFixed(2), "ms");
+        console.log("✅ [ChatSpeed] Initial load complete");
+
+        // Defer processing of older nodes to background chunks
+        if (olderTurns.length > 0) {
+          processNodesInChunks(olderTurns, { prepend: true });
+        }
+      }, 100);
     });
-
-    // STRICTLY enforce partial load: never call updateMessagesFromNodes with the full node list
-    const recentTurns = allTurns.slice(-initialBatchSize);
-    olderTurns = allTurns.slice(0, -initialBatchSize);
-
-    console.log("[ChatSpeed] Initial nodes selected:", recentTurns.length);
-    updateMessagesFromNodes(recentTurns);
-
-    const end = performance.now();
-    console.log("[ChatSpeed] Initial load time:", (end - start).toFixed(2), "ms");
-    console.log("✅ [ChatSpeed] Initial load complete");
 
     // THEN attach MutationObserver AFTER initial load
     const observer = new MutationObserver((mutations) => {
@@ -212,10 +220,6 @@ export const ChatSpeedUI = () => {
     });
     console.log("👀 [ChatSpeed] MutationObserver attached AFTER initial load");
 
-    // Defer processing of older nodes to background chunks
-    if (olderTurns.length > 0) {
-      processNodesInChunks(olderTurns, { prepend: true });
-    }
 
     // Periodic full resync fallback (every 60s)
     const resyncInterval = setInterval(() => {
