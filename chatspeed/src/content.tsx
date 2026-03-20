@@ -43,20 +43,24 @@ function init() {
   stabilityObserver.observe(targetNode, { childList: true, subtree: true });
 }
 
-// Wait for ChatGPT to finish hydrating before injecting
-function waitForMain() {
-  if (document.querySelector('main')) {
+function waitForMessages() {
+  const hasMessages = document.querySelector('[data-testid^="conversation-turn-"]');
+
+  if (hasMessages) {
     init();
-  } else {
-    const obs = new MutationObserver(() => {
-      if (document.querySelector('main')) {
-        obs.disconnect();
-        init();
-      }
-    });
-    obs.observe(document.body, { childList: true, subtree: true });
+    return;
   }
+
+  const obs = new MutationObserver(() => {
+    const hasMessages = document.querySelector('[data-testid^="conversation-turn-"]');
+    if (hasMessages) {
+      obs.disconnect();
+      init();
+    }
+  });
+
+  obs.observe(document.body, { childList: true, subtree: true });
 }
 
-waitForMain();
+waitForMessages();
 
