@@ -17,6 +17,12 @@ export const ChatSpeedUI = () => {
   const updateMessagesFromNodes = useCallback((nodes: HTMLElement[], options?: { prepend?: boolean }) => {
     if (nodes.length === 0) return;
 
+    // 🛡️ Safety: Strictly prevent large synchronous updates (can cause freezes)
+    if (nodes.length > 60) {
+      console.warn("🚨 [ChatSpeed] Prevented large update:", nodes.length);
+      return;
+    }
+
     // 🥉 Log every trigger
     console.log(`[ChatSpeed] updateMessagesFromNodes triggered, nodes: ${nodes.length}, prepend: ${!!options?.prepend}`);
 
@@ -152,16 +158,12 @@ export const ChatSpeedUI = () => {
       if (id) knownMessageIds.add(id);
     });
 
-    if (allTurns.length > initialBatchSize) {
-      const recentTurns = allTurns.slice(-initialBatchSize);
-      olderTurns = allTurns.slice(0, -initialBatchSize);
+    // STRICTLY enforce partial load: never call updateMessagesFromNodes with the full node list
+    const recentTurns = allTurns.slice(-initialBatchSize);
+    olderTurns = allTurns.slice(0, -initialBatchSize);
 
-      console.log("[ChatSpeed] Initial nodes selected:", recentTurns.length);
-      updateMessagesFromNodes(recentTurns);
-    } else {
-      console.log("[ChatSpeed] Initial nodes selected:", allTurns.length);
-      updateMessagesFromNodes(allTurns);
-    }
+    console.log("[ChatSpeed] Initial nodes selected:", recentTurns.length);
+    updateMessagesFromNodes(recentTurns);
 
     const end = performance.now();
     console.log("[ChatSpeed] Initial load time:", (end - start).toFixed(2), "ms");
