@@ -14,16 +14,17 @@ export const ChatSpeedUI = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [showOlderMessages, setShowOlderMessages] = useState(false);
 
-  const updateMessagesFromNodes = useCallback((nodes: HTMLElement[]) => {
+  const updateMessagesFromNodes = useCallback((nodes: HTMLElement[], options?: { prepend?: boolean }) => {
     if (nodes.length === 0) return;
 
     // 🥉 Log every trigger
-    console.log('[ChatSpeed] updateMessagesFromNodes triggered, nodes:', nodes.length);
+    console.log(`[ChatSpeed] updateMessagesFromNodes triggered, nodes: ${nodes.length}, prepend: ${!!options?.prepend}`);
 
     setMessages((prevMessages) => {
       const start = performance.now();
       let changed = false;
       const nextMessages = [...prevMessages]; // Shallow copy array
+      const newMessages: ChatMessage[] = [];
 
       nodes.forEach((turnEl) => {
         const id = turnEl.getAttribute('data-testid') || '';
@@ -59,20 +60,33 @@ export const ChatSpeedUI = () => {
             changed = true;
           }
         } else {
-          // Append new message incrementally
-          nextMessages.push({
+          // Collect new message
+          newMessages.push({
             id,
             role: isUser ? 'user' : 'assistant',
             content: text,
             createdAt: Date.now(),
             isStreaming
           });
-          changed = true;
         }
       });
 
+      // Explicitly set changed to true if we have new messages to ensure UI hydration
+      if (newMessages.length > 0) {
+        changed = true;
+      }
+
       if (changed) {
-        let finalMessages = nextMessages;
+        let finalMessages;
+        if (newMessages.length > 0) {
+          if (options?.prepend) {
+            finalMessages = [...newMessages, ...nextMessages];
+          } else {
+            finalMessages = [...nextMessages, ...newMessages];
+          }
+        } else {
+          finalMessages = nextMessages;
+        }
 
         // Cap message history simply (memory bounded)
         if (finalMessages.length > MAX_MESSAGES) {
@@ -91,12 +105,51 @@ export const ChatSpeedUI = () => {
     });
   }, []);
 
+  const processNodesInChunks = useCallback((nodes: HTMLElement[], options?: { prepend?: boolean; chunkSize?: number }) => {
+    const { prepend = false, chunkSize = 50 } = options || {};
+    const nodesToProcess = [...nodes];
+
+    const processNextChunk = () => {
+      if (nodesToProcess.length === 0) return;
+
+      const chunk = prepend
+        ? nodesToProcess.splice(-chunkSize) // Take from the end if prepending (last 50 of the remaining)
+        : nodesToProcess.splice(0, chunkSize); // Take from the start if appending (first 50)
+
+      updateMessagesFromNodes(chunk, { prepend });
+
+      if (nodesToProcess.length > 0) {
+        if (typeof window.requestIdleCallback === 'function') {
+          window.requestIdleCallback(processNextChunk);
+        } else {
+          setTimeout(processNextChunk, 10);
+        }
+      }
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(processNextChunk);
+    } else {
+      setTimeout(processNextChunk, 10);
+    }
+  }, [updateMessagesFromNodes]);
+
   useEffect(() => {
     console.log("🚀 ChatSpeed: Incremental scraping initialized.");
 
-    // Initial full scan
-    const initialTurns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
-    updateMessagesFromNodes(Array.from(initialTurns) as HTMLElement[]);
+    // Initial optimized scan: process last 50 immediately, others in chunks (background)
+    const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
+    const initialBatchSize = 50;
+
+    if (allTurns.length > initialBatchSize) {
+      const recentTurns = allTurns.slice(-initialBatchSize);
+      const olderTurns = allTurns.slice(0, -initialBatchSize);
+
+      updateMessagesFromNodes(recentTurns);
+      processNodesInChunks(olderTurns, { prepend: true });
+    } else {
+      updateMessagesFromNodes(allTurns);
+    }
 
     const observer = new MutationObserver((mutations) => {
       // 🥉 Streaming frequency — watch for 20+/sec = bottleneck
@@ -138,10 +191,10 @@ export const ChatSpeedUI = () => {
 
     // Periodic full resync fallback (every 60s)
     const resyncInterval = setInterval(() => {
-      console.log("🔄 ChatSpeed: Periodic full resync...");
-      const allTurns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+      console.log("🔄 ChatSpeed: Periodic full resync (chunked)...");
+      const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
       console.log('[ChatSpeed] Resync — total turns found:', allTurns.length);
-      updateMessagesFromNodes(Array.from(allTurns) as HTMLElement[]);
+      processNodesInChunks(allTurns);
     }, 60000);
 
     // 🧠 Scroll performance indicator
@@ -155,7 +208,7 @@ export const ChatSpeedUI = () => {
       window.removeEventListener('scroll', scrollHandler);
       clearInterval(resyncInterval);
     };
-  }, [updateMessagesFromNodes]);
+  }, [updateMessagesFromNodes, processNodesInChunks]);
 
   // Handle Resizing
   useEffect(() => {
