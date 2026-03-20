@@ -137,12 +137,20 @@ export const ChatSpeedUI = () => {
   useEffect(() => {
     console.log("🚀 ChatSpeed: Incremental scraping initialized.");
 
+    const knownMessageIds = new Set<string>();
+
     // Initial optimized scan: process last 50 immediately, others in chunks (background)
     console.log("🚀 [ChatSpeed] Initial controlled load");
     const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
     const initialBatchSize = 50;
     const start = performance.now();
     let olderTurns: HTMLElement[] = [];
+
+    // Initialize knownMessageIds with ALL currently existing turns to prevent hydration spikes
+    allTurns.forEach(t => {
+      const id = t.getAttribute('data-testid');
+      if (id) knownMessageIds.add(id);
+    });
 
     if (allTurns.length > initialBatchSize) {
       const recentTurns = allTurns.slice(-initialBatchSize);
@@ -166,24 +174,28 @@ export const ChatSpeedUI = () => {
       const nodesToUpdate = new Set<HTMLElement>();
 
       mutations.forEach((mutation) => {
-        // Handle added nodes
+        // ONLY use addedNodes to avoid hydration-triggered re-scans (characterData)
+        if (mutation.addedNodes.length === 0) return;
+
         mutation.addedNodes.forEach((node) => {
           if (node instanceof HTMLElement) {
+            const turns: HTMLElement[] = [];
             if (node.matches('[data-testid^="conversation-turn-"]')) {
-              nodesToUpdate.add(node);
+              turns.push(node);
             } else {
-              const nestedTurns = node.querySelectorAll('[data-testid^="conversation-turn-"]');
-              nestedTurns.forEach(t => nodesToUpdate.add(t as HTMLElement));
+              const nested = node.querySelectorAll('[data-testid^="conversation-turn-"]');
+              nested.forEach(t => turns.push(t as HTMLElement));
             }
+
+            turns.forEach(turnEl => {
+              const id = turnEl.getAttribute('data-testid');
+              if (id && !knownMessageIds.has(id)) {
+                knownMessageIds.add(id);
+                nodesToUpdate.add(turnEl);
+              }
+            });
           }
         });
-
-        // Handle content updates (streaming)
-        const target = mutation.target as HTMLElement;
-        const closestTurn = target.closest?.('[data-testid^="conversation-turn-"]') as HTMLElement;
-        if (closestTurn) {
-          nodesToUpdate.add(closestTurn);
-        }
       });
 
       if (nodesToUpdate.size > 0) {
@@ -194,8 +206,7 @@ export const ChatSpeedUI = () => {
     const targetNode = document.querySelector('main') || document.body;
     observer.observe(targetNode, {
       childList: true,
-      subtree: true,
-      characterData: true
+      subtree: true
     });
     console.log("👀 [ChatSpeed] MutationObserver attached AFTER initial load");
 
