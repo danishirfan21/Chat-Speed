@@ -137,21 +137,14 @@ export const ChatSpeedUI = () => {
   useEffect(() => {
     console.log("🚀 ChatSpeed: Incremental scraping initialized.");
 
-    // Initial optimized scan: process last 50 immediately, others in chunks (background)
-    const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
-    const initialBatchSize = 50;
-
-    if (allTurns.length > initialBatchSize) {
-      const recentTurns = allTurns.slice(-initialBatchSize);
-      const olderTurns = allTurns.slice(0, -initialBatchSize);
-
-      updateMessagesFromNodes(recentTurns);
-      processNodesInChunks(olderTurns, { prepend: true });
-    } else {
-      updateMessagesFromNodes(allTurns);
-    }
+    let isInitialLoadDone = false;
 
     const observer = new MutationObserver((mutations) => {
+      if (!isInitialLoadDone) {
+        console.log("⛔ [ChatSpeed] Skipping mutation during initial load");
+        return;
+      }
+
       // 🥉 Streaming frequency — watch for 20+/sec = bottleneck
       console.count('[ChatSpeed] Mutation events');
       const nodesToUpdate = new Set<HTMLElement>();
@@ -188,6 +181,35 @@ export const ChatSpeedUI = () => {
       subtree: true,
       characterData: true
     });
+
+    // Initial optimized scan: process last 50 immediately, others in chunks (background)
+    console.log("🚀 [ChatSpeed] Initial controlled load");
+    const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
+    const initialBatchSize = 50;
+    const start = performance.now();
+
+    if (allTurns.length > initialBatchSize) {
+      const recentTurns = allTurns.slice(-initialBatchSize);
+      const olderTurns = allTurns.slice(0, -initialBatchSize);
+
+      console.log("[ChatSpeed] Initial nodes selected:", recentTurns.length);
+      updateMessagesFromNodes(recentTurns);
+
+      isInitialLoadDone = true;
+      const end = performance.now();
+      console.log("[ChatSpeed] Initial load time:", (end - start).toFixed(2), "ms");
+      console.log("✅ [ChatSpeed] Initial load complete");
+
+      processNodesInChunks(olderTurns, { prepend: true });
+    } else {
+      console.log("[ChatSpeed] Initial nodes selected:", allTurns.length);
+      updateMessagesFromNodes(allTurns);
+
+      isInitialLoadDone = true;
+      const end = performance.now();
+      console.log("[ChatSpeed] Initial load time:", (end - start).toFixed(2), "ms");
+      console.log("✅ [ChatSpeed] Initial load complete");
+    }
 
     // Periodic full resync fallback (every 60s)
     const resyncInterval = setInterval(() => {
