@@ -144,6 +144,7 @@ export const ChatSpeedUI = () => {
     console.log("🚀 ChatSpeed: Incremental scraping initialized.");
 
     const knownMessageIds = new Set<string>();
+    let isInitialLoadComplete = false;
 
     // Initial optimized scan: delay slightly to ensure DOM stabilizes and hydration finishes
     requestAnimationFrame(() => {
@@ -174,11 +175,15 @@ export const ChatSpeedUI = () => {
         if (olderTurns.length > 0) {
           processNodesInChunks(olderTurns, { prepend: true });
         }
+
+        isInitialLoadComplete = true;
       }, 100);
     });
 
     // THEN attach MutationObserver AFTER initial load
     const observer = new MutationObserver((mutations) => {
+      if (!isInitialLoadComplete) return;
+
       // 🥉 Streaming frequency — watch for 20+/sec = bottleneck
       console.count('[ChatSpeed] Mutation events');
       const nodesToUpdate = new Set<HTMLElement>();
