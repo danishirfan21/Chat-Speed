@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  const MAX_MESSAGES = 50;
+  const MAX_MESSAGES = 4;
   const originalFetch = window.fetch;
 
   window.fetch = async function (...args) {
