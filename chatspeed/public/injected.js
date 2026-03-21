@@ -31,86 +31,52 @@
       const cloned = response.clone();
       const json = await cloned.json();
 
-      if (!json?.mapping) {
-        console.log('[ChatSpeed] No mapping found in response, passing through.');
-        return response;
-      }
+      if (!json?.mapping || !json?.current_node) return response;
 
       const mapping = json.mapping;
       const currentNodeId = json.current_node;
+      const newMapping = {};
 
-      if (!currentNodeId || !mapping[currentNodeId]) {
-        console.log('[ChatSpeed] No current_node found, passing through.');
-        return response;
-      }
+      // 1. Identify the Root Node (the node with no parent)
+      const rootNodeId = Object.keys(mapping).find(id => !mapping[id].parent);
+      if (!rootNodeId) return response; 
+      
+      newMapping[rootNodeId] = { ...mapping[rootNodeId], children: [] };
 
-      // Walk backwards from current_node via parent pointers
-      const selected = new Map();
-      let nodeId = currentNodeId;
-      let count = 0;
-
-      while (nodeId && mapping[nodeId] && count < MAX_MESSAGES) {
-        const node = mapping[nodeId];
-        selected.set(nodeId, node);
-        nodeId = node.parent;
-        count++;
-      }
-
-      // If the walk ended before hitting the root, include the root ancestor
-      // so ChatGPT has a valid tree root
-      if (nodeId && mapping[nodeId] && !selected.has(nodeId)) {
-        const rootNode = { ...mapping[nodeId] };
-        // Point children only to the node we came from (trim siblings)
-        const childInChain = Array.from(selected.keys()).find(
-          (key) => selected.get(key).parent === nodeId
-        );
-        if (childInChain) {
-          rootNode.children = [childInChain];
+      // 2. Trace back the last 50 messages from the current leaf
+      const tailNodeIds = [];
+      let curr = currentNodeId;
+      while (curr && mapping[curr] && tailNodeIds.length < MAX_MESSAGES) {
+        if (curr !== rootNodeId) {
+          tailNodeIds.unshift(curr); // Keep chronological order
         }
-        selected.set(nodeId, rootNode);
+        curr = mapping[curr].parent;
       }
 
-      // Fix the oldest selected node's parent pointer:
-      // The oldest node in our chain should point to the root (or have null parent)
-      // to keep the chain valid without dangling references.
-      const oldestInChain = Array.from(selected.keys()).find((key) => {
-        const parentId = selected.get(key).parent;
-        return parentId && !selected.has(parentId);
-      });
-      if (oldestInChain) {
-        selected.set(oldestInChain, {
-          ...selected.get(oldestInChain),
-          parent: null,
+      // 3. Stitch the oldest kept message to the Root Node
+      if (tailNodeIds.length > 0) {
+        const oldestKeptId = tailNodeIds[0];
+        
+        // Graft: Root points to our first kept message
+        newMapping[rootNodeId].children = [oldestKeptId];
+
+        // Build the rest of the chain
+        tailNodeIds.forEach((id) => {
+          const originalNode = mapping[id];
+          newMapping[id] = {
+            ...originalNode,
+            // If it's the first in our slice, its parent is now the Root
+            parent: id === oldestKeptId ? rootNodeId : originalNode.parent
+          };
         });
       }
 
-      // Rebuild mapping
-      const newMapping = {};
-      selected.forEach((value, key) => {
-        newMapping[key] = value;
-      });
-
-      const originalCount = Object.keys(mapping).length;
-      const newCount = Object.keys(newMapping).length;
-
       json.mapping = newMapping;
+      console.log(`[ChatSpeed] Scaled graph: ${Object.keys(mapping).length} → ${Object.keys(newMapping).length} nodes.`);
 
-      console.log('[ChatSpeed] Intercepted conversation:', url);
-      console.log(
-        '[ChatSpeed] Mapping trimmed:',
-        originalCount,
-        '→',
-        newCount,
-        'nodes'
-      );
-
-      return new Response(JSON.stringify(json), {
-        status: response.status,
-        statusText: response.statusText,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify(json), response);
     } catch (err) {
-      console.warn('[ChatSpeed] Intercept failed, returning original:', err);
+      console.error('[ChatSpeed] Surgery failed:', err);
       return response;
     }
   };
