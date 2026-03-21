@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 import { MessageItem } from './MessageItem'
 import { Virtuoso } from 'react-virtuoso'
+import { pruneOldMessages } from '../utils/domPruning'
 
 export const ChatSpeedUI = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -58,6 +59,7 @@ export const ChatSpeedUI = () => {
 
       if (changed) {
         // Appending new messages since ChatGPT streams/adds in order.
+        setTimeout(() => pruneOldMessages(200), 1000); // Debounce-ish pruning after new message batch
         return [...nextMessages, ...newMessages];
       }
       return prevMessages;
@@ -68,15 +70,34 @@ export const ChatSpeedUI = () => {
     const knownMessageIds = new Set<string>();
     let isInitialLoadComplete = false;
 
-    // Initial load of existing messages
+    // Chunked initial load of existing messages to avoid O(n) main thread blocking
     setTimeout(() => {
       const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
-      allTurns.forEach(t => {
-        const id = t.getAttribute('data-testid');
-        if (id) knownMessageIds.add(id);
-      });
-      updateMessagesFromNodes(allTurns);
-      isInitialLoadComplete = true;
+      console.log(`[ChatSpeed] Executing chunked load for ${allTurns.length} host nodes`);
+      
+      let index = 0;
+      const CHUNK_SIZE = 100;
+      
+      const processChunk = () => {
+        const chunk = allTurns.slice(index, index + CHUNK_SIZE);
+        chunk.forEach(t => {
+          const id = t.getAttribute('data-testid');
+          if (id) knownMessageIds.add(id);
+        });
+        
+        updateMessagesFromNodes(chunk);
+        index += CHUNK_SIZE;
+        
+        if (index < allTurns.length) {
+          requestAnimationFrame(processChunk);
+        } else {
+          isInitialLoadComplete = true;
+          // Clear up historical React DOM overhead
+          pruneOldMessages(200);
+        }
+      };
+      
+      processChunk();
     }, 100);
 
     // MutationObserver to catch new messages and text updates
@@ -129,7 +150,8 @@ export const ChatSpeedUI = () => {
       }
     });
 
-    observer.observe(document.body, {
+    const observerTarget = document.querySelector('main') || document.body;
+    observer.observe(observerTarget, {
       childList: true,
       subtree: true,
       characterData: true
@@ -201,7 +223,7 @@ export const ChatSpeedUI = () => {
       alignItems: 'center',
     }}>
       <div style={{
-        height: `calc(${mainRect.height}px - ${inputHeight}px)`,
+        height: "calc(" + mainRect.height + "px - " + inputHeight + "px)",
         width: '100%',
         maxWidth: '800px', // Matches typical ChatGPT container width
         padding: '0 20px',
