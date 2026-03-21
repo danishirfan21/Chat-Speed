@@ -56,17 +56,20 @@
       // 3. Stitch the oldest kept message to the Root Node
       if (tailNodeIds.length > 0) {
         const oldestKeptId = tailNodeIds[0];
-        
+
         // Graft: Root points to our first kept message
         newMapping[rootNodeId].children = [oldestKeptId];
 
-        // Build the rest of the chain
-        tailNodeIds.forEach((id) => {
+        // Build the chain with correct parent and children arrays
+        tailNodeIds.forEach((id, index) => {
           const originalNode = mapping[id];
+          const nextId = tailNodeIds[index + 1] ?? null; // undefined → null
           newMapping[id] = {
             ...originalNode,
-            // If it's the first in our slice, its parent is now the Root
-            parent: id === oldestKeptId ? rootNodeId : originalNode.parent
+            // First kept node's parent is the root; rest keep their original parent
+            parent: id === oldestKeptId ? rootNodeId : originalNode.parent,
+            // Point children only to the next node in chain; last node has no children
+            children: nextId ? [nextId] : []
           };
         });
       }
@@ -74,7 +77,11 @@
       json.mapping = newMapping;
       console.log(`[ChatSpeed] Scaled graph: ${Object.keys(mapping).length} → ${Object.keys(newMapping).length} nodes.`);
 
-      return new Response(JSON.stringify(json), response);
+      return new Response(JSON.stringify(json), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: { 'Content-Type': 'application/json' }
+      });
     } catch (err) {
       console.error('[ChatSpeed] Surgery failed:', err);
       return response;

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import type { ChatMessage } from '../types'
 import { MessageItem } from './MessageItem'
 import { Virtuoso } from 'react-virtuoso'
-import { pruneOldMessages } from '../utils/domPruning'
 
 export const ChatSpeedUI = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -56,8 +55,6 @@ export const ChatSpeedUI = () => {
       if (newMessages.length > 0) changed = true;
 
       if (changed) {
-        // Appending new messages since ChatGPT streams/adds in order.
-        setTimeout(() => pruneOldMessages(10), 1000); // Debounce-ish pruning after new message batch
         const all = [...nextMessages, ...newMessages];
         let lastUserIdx = -1;
         for (let i = all.length - 1; i >= 0; i--) {
@@ -103,8 +100,6 @@ export const ChatSpeedUI = () => {
           requestAnimationFrame(processChunk);
         } else {
           isInitialLoadComplete = true;
-          // Clear up historical React DOM overhead
-          pruneOldMessages(10);
         }
       };
       
