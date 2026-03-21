@@ -15,7 +15,17 @@ const manifest = defineManifest({
         'https://*.openai.com/*',
         'https://chat.jules.ai/*'
       ],
-      run_at: 'document_idle',
+      run_at: 'document_start',
+    },
+  ],
+  web_accessible_resources: [
+    {
+      resources: ['injected.js'],
+      matches: [
+        'https://*.chatgpt.com/*',
+        'https://*.openai.com/*',
+        'https://chat.jules.ai/*'
+      ],
     },
   ],
 })
