@@ -1,8 +1,4 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import React, { useEffect, useRef } from 'react';
 import type { ChatMessage } from '../types';
 
 interface MessageItemProps {
@@ -11,6 +7,13 @@ interface MessageItemProps {
 
 export const MessageItem = React.memo(({ message }: MessageItemProps) => {
   const isUser = message.role === 'user';
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !message.node) return;
+    containerRef.current.innerHTML = '';
+    containerRef.current.appendChild(message.node);
+  }, [message.node]);
 
   return (
     <div
@@ -34,32 +37,7 @@ export const MessageItem = React.memo(({ message }: MessageItemProps) => {
         {message.isStreaming && <span style={{ marginLeft: '8px', opacity: 0.5 }}>●</span>}
       </div>
 
-      <div className="prose prose-invert max-w-none" style={{ opacity: 0.9, lineHeight: '1.6', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            code({ inline, className, children, ...props }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  style={oneDark as any}
-                  language={match[1]}
-                  PreTag="div"
-                  {...props}
-                >
-                  {String(children).replace(/\\n$/, '')}
-                </SyntaxHighlighter>
-              ) : (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              );
-            },
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
-      </div>
+      <div ref={containerRef} style={{ opacity: 0.9 }} className="chat-speed-cloned-message" />
     </div>
   );
 });

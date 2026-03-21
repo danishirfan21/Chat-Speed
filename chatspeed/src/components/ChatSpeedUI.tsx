@@ -17,50 +17,53 @@ export const ChatSpeedUI = () => {
       const nextMessages = [...prevMessages];
       const newMessages: ChatMessage[] = [];
 
-      nodes.forEach((turnEl) => {
-        const id = turnEl.getAttribute('data-testid') || '';
-        if (!id) return;
+      nodes.forEach(turnEl => {
+        const turnId = turnEl.getAttribute('data-testid') ?? '';
+        if (!turnId) return;
+        const messageEls = turnEl.querySelectorAll('[data-message-author-role]');
+        messageEls.forEach((msgEl, idx) => {
+          const role = msgEl.getAttribute('data-message-author-role') === 'user' ? 'user' : 'assistant';
+          const key = `${turnId}-${role}-${idx}`;
+          
+          const cloned = msgEl.cloneNode(true) as HTMLElement;
+          const isStreaming = !!cloned.querySelector('.result-streaming') ||
+                              !!cloned.querySelector('path[d*="M1 1v14h14V1H1z"]');
 
-        const contentEl = turnEl.querySelector('.prose') as HTMLElement;
-        const text = contentEl 
-          ? contentEl.textContent?.trim() || '' 
-          : turnEl.textContent?.trim() || '';
-
-        const isUser = turnEl.querySelector('[data-message-author-role="user"]') ||
-                       (turnEl.textContent && turnEl.textContent.toLowerCase().startsWith('you'));
-
-        const isStreaming = !!turnEl.querySelector('.result-streaming') ||
-                            !!turnEl.querySelector('path[d*="M1 1v14h14V1H1z"]');
-
-        const existingIndex = nextMessages.findIndex(m => m.id === id);
-
-        if (existingIndex !== -1) {
-          const existing = nextMessages[existingIndex];
-          if (existing.content !== text || existing.isStreaming !== isStreaming) {
+          const existingIndex = nextMessages.findIndex(m => m.id === key);
+          if (existingIndex !== -1) {
+            const existing = nextMessages[existingIndex];
             nextMessages[existingIndex] = {
               ...existing,
-              content: text,
+              node: cloned,
               isStreaming
             };
             changed = true;
+          } else {
+            newMessages.push({
+              id: key,
+              role,
+              node: cloned,
+              createdAt: Date.now(),
+              isStreaming
+            });
           }
-        } else {
-          newMessages.push({
-            id,
-            role: isUser ? 'user' : 'assistant',
-            content: text,
-            createdAt: Date.now(),
-            isStreaming
-          });
-        }
+        });
       });
 
       if (newMessages.length > 0) changed = true;
 
       if (changed) {
         // Appending new messages since ChatGPT streams/adds in order.
-        setTimeout(() => pruneOldMessages(2), 1000); // Debounce-ish pruning after new message batch
-        return [...nextMessages, ...newMessages].slice(-2);
+        setTimeout(() => pruneOldMessages(10), 1000); // Debounce-ish pruning after new message batch
+        const all = [...nextMessages, ...newMessages];
+        let lastUserIdx = -1;
+        for (let i = all.length - 1; i >= 0; i--) {
+          if (all[i].role === 'user') {
+            lastUserIdx = i;
+            break;
+          }
+        }
+        return lastUserIdx !== -1 ? all.slice(lastUserIdx) : all;
       }
       return prevMessages;
     });
@@ -72,7 +75,7 @@ export const ChatSpeedUI = () => {
 
     // Chunked initial load of existing messages to avoid O(n) main thread blocking
     setTimeout(() => {
-      const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')).slice(-2) as HTMLElement[];
+      const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')).slice(-10) as HTMLElement[];
       console.log(`[ChatSpeed] Executing chunked load for ${allTurns.length} host nodes`);
       
       let index = 0;
@@ -80,9 +83,14 @@ export const ChatSpeedUI = () => {
       
       const processChunk = () => {
         const chunk = allTurns.slice(index, index + CHUNK_SIZE);
-        chunk.forEach(t => {
-          const id = t.getAttribute('data-testid');
-          if (id) knownMessageIds.add(id);
+        chunk.forEach(turnEl => {
+          const turnId = turnEl.getAttribute('data-testid');
+          if (turnId) {
+            turnEl.querySelectorAll('[data-message-author-role]').forEach((msgEl, idx) => {
+              const role = msgEl.getAttribute('data-message-author-role') === 'user' ? 'user' : 'assistant';
+              knownMessageIds.add(`${turnId}-${role}-${idx}`);
+            });
+          }
         });
         
         updateMessagesFromNodes(chunk);
@@ -93,7 +101,7 @@ export const ChatSpeedUI = () => {
         } else {
           isInitialLoadComplete = true;
           // Clear up historical React DOM overhead
-          pruneOldMessages(2);
+          pruneOldMessages(10);
         }
       };
       
@@ -118,10 +126,16 @@ export const ChatSpeedUI = () => {
                 node.querySelectorAll('[data-testid^="conversation-turn-"]').forEach(t => turns.push(t as HTMLElement));
               }
               turns.forEach(turnEl => {
-                const id = turnEl.getAttribute('data-testid');
-                if (id && !knownMessageIds.has(id)) {
-                  knownMessageIds.add(id);
-                  nodesToUpdate.add(turnEl);
+                const turnId = turnEl.getAttribute('data-testid');
+                if (turnId) {
+                  turnEl.querySelectorAll('[data-message-author-role]').forEach((msgEl, idx) => {
+                    const role = msgEl.getAttribute('data-message-author-role') === 'user' ? 'user' : 'assistant';
+                    const key = `${turnId}-${role}-${idx}`;
+                    if (!knownMessageIds.has(key)) {
+                      knownMessageIds.add(key);
+                      nodesToUpdate.add(turnEl);
+                    }
+                  });
                 }
               });
             }
@@ -135,9 +149,8 @@ export const ChatSpeedUI = () => {
           if (target) {
             const turnEl = target.closest('[data-testid^="conversation-turn-"]') as HTMLElement;
             if (turnEl) {
-               const id = turnEl.getAttribute('data-testid');
-               // Only update if we already know about this turn, otherwise it'll be caught by the new node logic
-               if (id && knownMessageIds.has(id)) {
+               const turnId = turnEl.getAttribute('data-testid');
+               if (turnId) {
                    nodesToUpdate.add(turnEl);
                }
             }
