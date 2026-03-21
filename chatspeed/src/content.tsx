@@ -1,31 +1,44 @@
 import ReactDOM from 'react-dom/client'
 import { ChatSpeedUI } from './components/ChatSpeedUI'
-import { pruneOldMessages } from './utils/domPruning'
-import { debounce } from './utils/debounce'
 
-let isInitialLoadDone = false;
+function getHostMessageContainer(): HTMLElement | null {
+  const firstTurn = document.querySelector('[data-testid^="conversation-turn-"]');
+  if (!firstTurn) return null;
+
+  let current = firstTurn.parentElement;
+  while (current && current !== document.body) {
+    const style = window.getComputedStyle(current);
+    if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+      return current;
+    }
+    current = current.parentElement;
+  }
+  return firstTurn.parentElement;
+}
 
 function init() {
+  // Hide host messages
+  const style = document.createElement('style');
+  style.textContent = `
+    [data-testid^="conversation-turn-"] {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const container = getHostMessageContainer();
+  if (container) {
+    container.style.visibility = 'hidden';
+    container.setAttribute('data-chatspeed-hidden', 'true');
+  }
+
   const root = document.createElement('div');
   root.id = 'chatspeed-root';
   document.body.appendChild(root);
   ReactDOM.createRoot(root).render(<ChatSpeedUI />);
 
-  const debouncedPruning = debounce(() => {
-    pruneOldMessages(50);
-  }, 2000);
-
-  const observer = new MutationObserver((mutations) => {
-    if (!isInitialLoadDone) return;
-
-    const hasAddedNodes = mutations.some((m) => m.addedNodes.length > 0);
-    if (hasAddedNodes) {
-      debouncedPruning();
-    }
-  });
-
   const targetNode = document.querySelector('main') || document.body;
-  observer.observe(targetNode, { childList: true, subtree: true });
 
   // ✅ BETTER: wait until DOM stabilizes instead of fixed timeout
   let stableTimer: ReturnType<typeof setTimeout>;
@@ -34,9 +47,15 @@ function init() {
     clearTimeout(stableTimer);
 
     stableTimer = setTimeout(() => {
-      isInitialLoadDone = true;
       stabilityObserver.disconnect();
-      console.log("✅ [ChatSpeed] Pruning enabled (DOM stabilized)");
+      console.log("✅ [ChatSpeed] DOM stabilized");
+
+      // Re-check container if not found initially
+      const container = getHostMessageContainer();
+      if (container) {
+        container.style.visibility = 'hidden';
+        container.setAttribute('data-chatspeed-hidden', 'true');
+      }
     }, 300); // no mutations for 300ms → stable
   });
 
@@ -63,4 +82,3 @@ function waitForMessages() {
 }
 
 waitForMessages();
-
