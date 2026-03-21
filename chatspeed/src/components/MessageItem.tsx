@@ -34,7 +34,7 @@ export const MessageItem = React.memo(({ message }: MessageItemProps) => {
         {message.isStreaming && <span style={{ marginLeft: '8px', opacity: 0.5 }}>●</span>}
       </div>
 
-      <div style={{ opacity: 0.9 }}>
+      <div className="prose prose-invert max-w-none" style={{ opacity: 0.9, lineHeight: '1.6', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{

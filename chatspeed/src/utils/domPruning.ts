@@ -1,4 +1,4 @@
-export function pruneOldMessages(safeCount: number = 200) {
+export function pruneOldMessages(safeCount: number = 2) {
   const messages = document.querySelectorAll('[data-testid^="conversation-turn-"]');
   if (messages.length <= safeCount) return;
 

@@ -59,8 +59,8 @@ export const ChatSpeedUI = () => {
 
       if (changed) {
         // Appending new messages since ChatGPT streams/adds in order.
-        setTimeout(() => pruneOldMessages(200), 1000); // Debounce-ish pruning after new message batch
-        return [...nextMessages, ...newMessages];
+        setTimeout(() => pruneOldMessages(2), 1000); // Debounce-ish pruning after new message batch
+        return [...nextMessages, ...newMessages].slice(-2);
       }
       return prevMessages;
     });
@@ -72,7 +72,7 @@ export const ChatSpeedUI = () => {
 
     // Chunked initial load of existing messages to avoid O(n) main thread blocking
     setTimeout(() => {
-      const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')) as HTMLElement[];
+      const allTurns = Array.from(document.querySelectorAll('[data-testid^="conversation-turn-"]')).slice(-2) as HTMLElement[];
       console.log(`[ChatSpeed] Executing chunked load for ${allTurns.length} host nodes`);
       
       let index = 0;
@@ -93,7 +93,7 @@ export const ChatSpeedUI = () => {
         } else {
           isInitialLoadComplete = true;
           // Clear up historical React DOM overhead
-          pruneOldMessages(200);
+          pruneOldMessages(2);
         }
       };
       
