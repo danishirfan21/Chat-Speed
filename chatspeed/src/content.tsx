@@ -14,6 +14,11 @@ script.onload = () => script.remove();
 // ─────────────────────────────────────────────────────────────────────────────
 const THRESHOLD = 25; // DOM nodes before we trigger a prune
 
+function isTemporaryChat() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('temporary-chat') === 'true';
+}
+
 function showOptimizationToast() {
   let toast = document.getElementById('chatspeed-toast');
   if (toast) return;
@@ -121,7 +126,7 @@ let pruneDebounceTimer: any = null;
 let isPruning = false;
 
 function schedulePrune() {
-  if (isPruning) return;
+  if (isPruning || isTemporaryChat()) return;
   if (pruneDebounceTimer) clearTimeout(pruneDebounceTimer);
 
   pruneDebounceTimer = setTimeout(() => {
