@@ -14,38 +14,97 @@ script.onload = () => script.remove();
 // ─────────────────────────────────────────────────────────────────────────────
 const THRESHOLD = 25; // DOM nodes before we trigger a prune
 
-function showToast() {
+function showOptimizationToast() {
   let toast = document.getElementById('chatspeed-toast');
-  if (toast) return; // already showing
+  if (toast) return;
 
+  // 1. Inject High-End Animation Styles
+  if (!document.getElementById('chatspeed-toast-styles')) {
+    const style = document.createElement('style');
+    style.id = 'chatspeed-toast-styles';
+    style.textContent = `
+      @keyframes chatspeed-slide-in {
+        from { transform: translateX(120%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes chatspeed-progress-bar {
+        from { width: 100%; }
+        to { width: 0%; }
+      }
+      @font-face {
+        font-family: 'Inter';
+        src: local('Inter'), local('sans-serif');
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // 2. Create the Glassmorphism Container
   toast = document.createElement('div');
   toast.id = 'chatspeed-toast';
   Object.assign(toast.style, {
     position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    background: 'rgba(0,0,0,0.82)',
+    top: '20px',
+    right: '20px',
+    background: 'rgba(23, 23, 23, 0.75)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
     color: '#fff',
-    padding: '14px 24px',
-    borderRadius: '10px',
-    fontSize: '15px',
-    fontFamily: 'system-ui, sans-serif',
-    zIndex: '999999',
-    pointerEvents: 'none',
-    letterSpacing: '0.01em',
+    padding: '16px 24px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    fontSize: '14px',
+    fontWeight: '500',
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    zIndex: '2147483647', // Max possible z-index
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+    animation: 'chatspeed-slide-in 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards',
+    overflow: 'hidden',
+    minWidth: '240px',
+    pointerEvents: 'none'
   });
-  toast.textContent = '⚡ Speed Mode: Optimizing chat...';
+
+  const text = document.createElement('div');
+  text.innerHTML = '<span style="color: #FFD700; margin-right: 8px;">⚡</span> Speed Mode: Optimizing...';
+  toast.appendChild(text);
+
+  // 3. The Countdown Progress Bar
+  const progressTrack = document.createElement('div');
+  Object.assign(progressTrack.style, {
+    position: 'absolute',
+    bottom: '0',
+    left: '0',
+    width: '100%',
+    height: '3px',
+    background: 'rgba(255, 255, 255, 0.05)',
+  });
+
+  const progressBar = document.createElement('div');
+  Object.assign(progressBar.style, {
+    height: '100%',
+    background: 'rgba(255, 255, 255, 0.5)',
+    animation: 'chatspeed-progress-bar 3s linear forwards',
+  });
+
+  progressTrack.appendChild(progressBar);
+  toast.appendChild(progressTrack);
   document.body.appendChild(toast);
 
-  // Auto-remove after 3 s in case navigation doesn't fire
-  setTimeout(() => toast?.remove(), 3000);
+  // 4. Smooth Fade Out
+  setTimeout(() => {
+    if (toast) {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => toast?.remove(), 400);
+    }
+  }, 3000);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🧬 CORE STABLE LOGIC (Do not change)
+// ─────────────────────────────────────────────────────────────────────────────
+
 function triggerSoftReset() {
-  // Next.js listens to popstate to handle client-side routing.
-  // Dispatching it causes a route re-evaluation and a re-fetch of the
-  // conversation, which re-triggers our injected.js interceptor.
   window.history.replaceState(null, '', window.location.href);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
@@ -58,7 +117,7 @@ function isStreaming() {
   return !!document.querySelector('.result-streaming');
 }
 
-let pruneDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pruneDebounceTimer: any = null;
 let isPruning = false;
 
 function schedulePrune() {
@@ -67,55 +126,37 @@ function schedulePrune() {
 
   pruneDebounceTimer = setTimeout(() => {
     pruneDebounceTimer = null;
-
-    // Safety checks: don't prune while still streaming, and reconfirm threshold
     if (isStreaming()) return;
     if (getMessageCount() <= THRESHOLD) return;
 
-    console.log(`[ChatSpeed] Auto-Trimmer: ${getMessageCount()} messages — triggering soft reset.`);
+    console.log(`[ChatSpeed] Pruning at ${getMessageCount()} messages.`);
     isPruning = true;
 
-    showToast();
+    showOptimizationToast();
     triggerSoftReset();
 
-    // Watchdog: if message count hasn't dropped after 1 s, do a hard reload
     setTimeout(() => {
       if (getMessageCount() > THRESHOLD) {
-        console.warn('[ChatSpeed] Soft reset failed — falling back to hard reload.');
         window.location.reload();
-      } else {
-        console.log('[ChatSpeed] Soft reset successful.');
       }
       isPruning = false;
-    }, 1000);
-  }, 1000); // 1 s debounce
+    }, 1200);
+  }, 1000);
 }
 
 function attachTrimmer(main: Element) {
   const observer = new MutationObserver(() => {
-    if (getMessageCount() > THRESHOLD) {
-      schedulePrune();
-    }
+    if (getMessageCount() > THRESHOLD) schedulePrune();
   });
-
   observer.observe(main, { childList: true, subtree: true });
-  console.log('[ChatSpeed] Auto-Trimmer observer attached.');
 }
 
 function waitForMain() {
   const main = document.querySelector('main');
-  if (main) {
-    attachTrimmer(main);
-    return;
-  }
-
-  // Poll until <main> exists — content script runs at document_start
+  if (main) { attachTrimmer(main); return; }
   const waitObs = new MutationObserver(() => {
     const m = document.querySelector('main');
-    if (m) {
-      waitObs.disconnect();
-      attachTrimmer(m);
-    }
+    if (m) { waitObs.disconnect(); attachTrimmer(m); }
   });
   waitObs.observe(document.documentElement, { childList: true, subtree: true });
 }
