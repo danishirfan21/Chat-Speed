@@ -6,7 +6,21 @@ const manifest = defineManifest({
   manifest_version: 3,
   name: 'ChatSpeed',
   version: '1.0.0',
-  action: { default_popup: 'index.html' },
+  icons: {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png",
+  },
+  action: { 
+    default_popup: 'index.html',
+    default_icon: {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png",
+      "128": "icon128.png",
+    }
+  },
   content_scripts: [
     {
       js: ['src/content.tsx'],
