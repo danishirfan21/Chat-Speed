@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import NeoSkeuomorphicToggle from './components/reactor/neo-toggle';
@@ -6,9 +6,32 @@ import ScanningLineAnimation from './components/reactor/scanning-line';
 
 const App = () => {
   const [isActive, setIsActive] = useState(false);
+  const [ramSaved, setRamSaved] = useState(0);
+  const [nodesPruned, setNodesPruned] = useState(0);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const ramInterval = setInterval(() => {
+      setRamSaved((prev) => Math.min(prev + Math.random() * 3 + 1, 512));
+    }, 800);
+
+    const nodesInterval = setInterval(() => {
+      setNodesPruned((prev) => prev + Math.floor(Math.random() * 12 + 5));
+    }, 600);
+
+    return () => {
+      clearInterval(ramInterval);
+      clearInterval(nodesInterval);
+    };
+  }, [isActive]);
 
   const handleToggle = (newState: boolean) => {
     setIsActive(newState);
+    if (isActive) {
+      setRamSaved(0);
+      setNodesPruned(0);
+    }
   };
 
   return (
@@ -132,7 +155,95 @@ const App = () => {
           {/* Panels with AnimatePresence */}
           <AnimatePresence mode="wait">
             {isActive ? (
+              <>
               <ScanningLineAnimation key="scanner" isActive={isActive} />
+              {/* METRICS SECTION - Core Focus Area with enhanced depth */}
+              {isActive && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
+                  className="px-4 py-5 space-y-3 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent/0 relative section-depth card-edge-highlight"
+                  style={{
+                    boxShadow: 'inset 0 1px 4px rgba(0, 245, 255, 0.12)',
+                  }}
+                >
+                  {/* RAM Saved Card - Enhanced with lit panel effect */}
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    transition={{ duration: 0.2 }}
+                    className="metric-card metric-card-cyan p-3 rounded-lg group cursor-default"
+                  >
+                    <div className="flex items-start justify-between mb-2.5 relative z-10">
+                      <div className="flex-1">
+                        <p className="metric-label">RAM Saved</p>
+                        <motion.p
+                          key={ramSaved}
+                          animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
+                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                          className="metric-value text-accent mt-1.5"
+                        >
+                          {ramSaved.toFixed(0)}
+                        </motion.p>
+                      </div>
+                      <motion.span
+                        animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
+                        transition={{ duration: 2.5, repeat: Infinity }}
+                        className="text-2xl text-accent/40 group-hover:text-accent/60 transition-colors"
+                      >
+                        ⚡
+                      </motion.span>
+                    </div>
+                    <motion.div
+                      animate={{
+                        opacity: [0.3, 0.6, 0.3],
+                        backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'],
+                      }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="h-px rounded-full bg-gradient-to-r from-transparent via-accent/70 to-transparent relative z-10"
+                      style={{ backgroundSize: '200% 100%' }}
+                    />
+                  </motion.div>
+
+                  {/* Nodes Pruned Card - Enhanced with lit panel effect */}
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    transition={{ duration: 0.2 }}
+                    className="metric-card metric-card-gold p-3 rounded-lg group cursor-default"
+                  >
+                    <div className="flex items-start justify-between mb-2.5 relative z-10">
+                      <div className="flex-1">
+                        <p className="metric-label">Nodes Pruned</p>
+                        <motion.p
+                          key={nodesPruned}
+                          animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
+                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                          className="metric-value text-primary mt-1.5"
+                        >
+                          {nodesPruned}
+                        </motion.p>
+                      </div>
+                      <motion.span
+                        animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
+                        transition={{ duration: 2.5, repeat: Infinity, delay: 0.3 }}
+                        className="text-2xl text-primary/40 group-hover:text-primary/60 transition-colors"
+                      >
+                        ✂️
+                      </motion.span>
+                    </div>
+                    <motion.div
+                      animate={{
+                        opacity: [0.3, 0.6, 0.3],
+                        backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'],
+                      }}
+                      transition={{ duration: 3, repeat: Infinity, delay: 0.3 }}
+                      className="h-px rounded-full bg-gradient-to-r from-transparent via-primary/70 to-transparent relative z-10"
+                      style={{ backgroundSize: '200% 100%' }}
+                    />
+                  </motion.div>
+                </motion.div>
+              )}
+              </>
             ) : (
               <motion.div
                 key="idle"
