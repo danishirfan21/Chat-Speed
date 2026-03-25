@@ -15,6 +15,13 @@ export default function NeoSkeuomorphicToggle({
   const [showBurst, setShowBurst] = useState(false);
   const prevActive = useRef(isActive);
 
+  // Organic animation delay offsets
+  const ringDelays = useRef([
+    Math.random() * -4,
+    Math.random() * -4,
+    Math.random() * -4
+  ]);
+
   // Fire pulse burst only on STANDBY → ACTIVE transition
   useEffect(() => {
     if (isActive && !prevActive.current) {
@@ -31,7 +38,17 @@ export default function NeoSkeuomorphicToggle({
   const cyanGlow = 'rgba(0, 245, 255, 0.4)';
 
   return (
-    <div className={isActive ? 'animate-breathe-active' : 'animate-breathe-standby'}>
+    <motion.div
+      animate={{
+        scale: isActive ? [1, 1.04, 1] : [0.98, 1.02, 0.98],
+        opacity: isActive ? 1 : [0.75, 0.9, 0.75],
+      }}
+      transition={{
+        duration: 4,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
       <motion.button
         onClick={() => onChange(!isActive)}
         className="relative w-36 h-36 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
@@ -42,13 +59,16 @@ export default function NeoSkeuomorphicToggle({
         <motion.div
           animate={{
             borderColor: isActive ? cyanMid : cyanDim,
-            opacity: isActive ? 0.8 : 0.3,
+            opacity: isActive ? 0.6 : 0.12,
           }}
           transition={{ duration: 0.6 }}
-          className="absolute -inset-4 rounded-full animate-ring-spin-slow pointer-events-none"
+          className="absolute -inset-4 rounded-full pointer-events-none"
           style={{
             border: '1.5px dashed',
             borderColor: cyanDim,
+            animation: `reactor-ring-spin ${isActive ? '18s' : '36s'} linear infinite`,
+            animationDelay: `${ringDelays.current[0]}s`,
+            willChange: 'transform, opacity',
           }}
         />
 
@@ -56,13 +76,16 @@ export default function NeoSkeuomorphicToggle({
         <motion.div
           animate={{
             borderColor: isActive ? cyanMid : cyanDim,
-            opacity: isActive ? 0.6 : 0.2,
+            opacity: isActive ? 0.4 : 0.08,
           }}
           transition={{ duration: 0.6 }}
-          className="absolute -inset-1 rounded-full animate-ring-spin-mid pointer-events-none"
+          className="absolute -inset-1 rounded-full pointer-events-none"
           style={{
             border: '1px dotted',
             borderColor: cyanDim,
+            animation: `reactor-ring-spin-reverse ${isActive ? '12s' : '24s'} linear infinite`,
+            animationDelay: `${ringDelays.current[1]}s`,
+            willChange: 'transform, opacity',
           }}
         />
 
@@ -70,13 +93,16 @@ export default function NeoSkeuomorphicToggle({
         <motion.div
           animate={{
             borderColor: isActive ? cyanBright : cyanDim,
-            opacity: isActive ? 0.9 : 0.25,
+            opacity: isActive ? 0.75 : 0.12,
           }}
           transition={{ duration: 0.6 }}
-          className="absolute inset-2 rounded-full animate-ring-spin-fast pointer-events-none"
+          className="absolute inset-2 rounded-full pointer-events-none"
           style={{
             border: '1px solid',
             borderColor: cyanDim,
+            animation: `reactor-ring-spin ${isActive ? '8s' : '16s'} linear infinite`,
+            animationDelay: `${ringDelays.current[2]}s`,
+            willChange: 'transform, opacity',
           }}
         />
 
@@ -85,7 +111,7 @@ export default function NeoSkeuomorphicToggle({
           animate={{
             boxShadow: isActive
               ? `0 0 40px ${cyanGlow}, 0 0 80px rgba(0, 245, 255, 0.15), 0 20px 60px rgba(0, 0, 0, 0.7), inset -2px -2px 8px rgba(0, 0, 0, 0.5), inset 2px 2px 8px rgba(0, 245, 255, 0.25)`
-              : `0 0 15px rgba(0, 245, 255, 0.08), 0 20px 50px rgba(0, 0, 0, 0.8), inset -2px -2px 8px rgba(0, 0, 0, 0.7), inset 2px 2px 4px rgba(0, 245, 255, 0.05)`,
+              : `0 0 10px rgba(0, 245, 255, 0.08), 0 20px 50px rgba(0, 0, 0, 0.8), inset -2px -2px 8px rgba(0, 0, 0, 0.7), inset 2px 2px 4px rgba(0, 245, 255, 0.05)`,
           }}
           transition={{ duration: 0.5 }}
           className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 via-white/5 to-black/20 backdrop-blur-xl border-2"
@@ -113,38 +139,40 @@ export default function NeoSkeuomorphicToggle({
               ? 'radial-gradient(circle at 40% 35%, rgba(0, 245, 255, 0.4), rgba(0, 245, 255, 0.1) 60%, rgba(5, 8, 10, 0.8))'
               : 'radial-gradient(circle at 40% 35%, rgba(0, 245, 255, 0.1), rgba(0, 245, 255, 0.03) 60%, rgba(5, 8, 10, 0.9))',
           }}
-        />
+        >
+          {/* Specular highlight for 3D glass effect */}
+          <div 
+            className="absolute inset-0 rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.15), transparent 40%)'
+            }}
+          />
+        </motion.div>
 
-        {/* ── Inner Glow Pulse (active only) ── */}
-        <AnimatePresence>
-          {isActive && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: [0.6, 0.2, 0.6],
-                  scale: [0.8, 1.1, 0.8],
-                }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute inset-8 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, rgba(0, 245, 255, 0.3), transparent 70%)`,
-                }}
-              />
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: [0.4, 0.15, 0.4],
-                  scale: [0.7, 1.15, 0.7],
-                }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 3.7, repeat: Infinity, delay: 0.6, ease: 'easeInOut' }}
-                className="absolute inset-10 rounded-full bg-[rgba(0,245,255,0.15)]"
-              />
-            </>
-          )}
-        </AnimatePresence>
+        {/* ── Inner Glow Pulse (both states — brighter when active) ── */}
+        <motion.div
+          animate={{
+            opacity: isActive ? [0.65, 0.45, 0.65] : [0.2, 0.12, 0.2],
+            scale: isActive ? [0.8, 1.1, 0.8] : [0.9, 1.02, 0.9],
+          }}
+          transition={{ duration: isActive ? 3 : 5, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-8 rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(0, 245, 255, 0.25), transparent 70%)',
+            willChange: 'transform, opacity',
+          }}
+        />
+        {isActive && (
+          <motion.div
+            animate={{
+              opacity: [0.45, 0.3, 0.45],
+              scale: [0.7, 1.15, 0.7],
+            }}
+            transition={{ duration: 3.7, repeat: Infinity, delay: 0.6, ease: 'easeInOut' }}
+            className="absolute inset-10 rounded-full bg-[rgba(0,245,255,0.15)]"
+            style={{ willChange: 'transform, opacity' }}
+          />
+        )}
 
         {/* ── Power Icon ── */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -167,24 +195,23 @@ export default function NeoSkeuomorphicToggle({
           </motion.svg>
         </div>
 
-        {/* ── Outer Glow Ring (active — slower, organic) ── */}
-        <AnimatePresence>
-          {isActive && (
-            <motion.div
-              initial={{ opacity: 0, scale: 1 }}
-              animate={{
-                opacity: [0.5, 0.15, 0.5],
-                scale: [1, 1.12, 1],
-              }}
-              exit={{ opacity: 0, scale: 1.2 }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -inset-3 rounded-full pointer-events-none"
-              style={{
-                border: `2px solid rgba(0, 245, 255, 0.35)`,
-              }}
-            />
-          )}
-        </AnimatePresence>
+        {/* ── Outer Glow Ring (always visible, brighter when active) ── */}
+        <motion.div
+          animate={{
+            opacity: isActive ? [0.55, 0.38, 0.55] : [0.12, 0.06, 0.12],
+            scale: isActive ? [1, 1.12, 1] : [1, 1.02, 1],
+          }}
+          transition={{
+            duration: isActive ? 3 : 6,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="absolute -inset-3 rounded-full pointer-events-none"
+          style={{
+            border: `1.5px solid rgba(0, 245, 255, ${isActive ? 0.3 : 0.05})`,
+            willChange: 'transform, opacity',
+          }}
+        />
 
         {/* ── Pulse Burst (fires once on activation) ── */}
         <AnimatePresence>
@@ -204,6 +231,6 @@ export default function NeoSkeuomorphicToggle({
           )}
         </AnimatePresence>
       </motion.button>
-    </div>
+    </motion.div>
   );
 }

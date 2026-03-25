@@ -31,15 +31,69 @@ const App = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col items-center gap-8 mb-12"
+            className="flex flex-col items-center gap-2 mb-8"
           >
-            {/* Heading */}
-            <div className="text-center">
-              <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#00F5FF] to-[#D4AF37]">
+            {/* ── Two-Layer Header ── */}
+            <div className="w-full">
+              {/* Top Row: Brand + Status */}
+              <div className="flex items-center justify-between">
+                {/* Left: Logo + Product Name */}
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src="/icon32.png"
+                    alt="ChatSpeed"
+                    className="w-5 h-5"
+                    style={{
+                      transform: 'translateY(0.5px)',
+                      filter: 'drop-shadow(0 0 3px rgba(0, 245, 255, 0.2))',
+                    }}
+                  />
+                  <span
+                    className="text-[15px] font-semibold text-white tracking-tight"
+                    style={{ textShadow: '0 0 10px rgba(0, 245, 255, 0.25)' }}
+                  >
+                    ChatSpeed
+                  </span>
+                </div>
+
+                {/* Right: Status Indicator */}
+                <motion.div
+                  animate={{ opacity: isActive ? 1 : 0.6 }}
+                  transition={{ duration: 0.4, delay: 0.2 }}
+                  className="flex items-center gap-[3px]"
+                >
+                  <motion.div
+                    style={{
+                      backgroundColor: isActive ? 'rgba(0, 245, 255, 1)' : 'rgba(0, 245, 255, 0.15)',
+                      boxShadow: isActive
+                        ? '0 0 10px rgba(0, 245, 255, 0.8), 0 0 4px rgba(0, 245, 255, 0.4)'
+                        : '0 0 2px rgba(0, 245, 255, 0.05)',
+                    }}
+                    transition={{ duration: 0.4 }}
+                    className={`w-[7px] h-[7px] rounded-full ${isActive ? 'animate-status-dot' : ''}`}
+                  />
+                  <span 
+                    className={`text-[11px] font-mono tracking-widest uppercase transition-all duration-300 ${isActive ? 'text-white' : 'text-muted-foreground opacity-60'}`}
+                    style={{
+                      textShadow: isActive ? '0 0 4px rgba(0, 245, 255, 0.25)' : 'none',
+                    }}
+                  >
+                    {isActive ? 'ACTIVE' : 'STANDBY'}
+                  </span>
+                </motion.div>
+              </div>
+
+              {/* Sub-header: Technical Identity */}
+              <p
+                className="mt-1.5 text-[11px] font-semibold tracking-[0.25em] uppercase opacity-90 transition-all duration-500"
+                style={{
+                  color: isActive ? 'rgba(0, 245, 255, 0.95)' : 'rgba(0, 245, 255, 0.6)',
+                  textShadow: isActive 
+                    ? '0 0 12px rgba(0, 245, 255, 0.3), 0 0 4px rgba(0, 245, 255, 0.15)' 
+                    : '0 0 6px rgba(0, 245, 255, 0.12)',
+                }}
+              >
                 Surgical Network Graft
-              </h1>
-              <p className="text-muted-foreground text-sm tracking-wide uppercase">
-                O(1) JSON Data Stream Pruning
               </p>
             </div>
 
@@ -58,38 +112,26 @@ const App = () => {
                 }}
               />
               <NeoSkeuomorphicToggle isActive={isActive} onChange={handleToggle} />
-            </div>
 
-            {/* Status Indicator */}
-            <motion.div
-              animate={{ opacity: isActive ? 1 : 0.6 }}
-              transition={{ duration: 0.4 }}
-              className="flex items-center gap-2"
-            >
+              {/* ── Energy Continuity Beam ── */}
               <motion.div
-                animate={{
-                  backgroundColor: isActive
-                    ? 'rgba(0, 245, 255, 0.9)'
-                    : 'rgba(0, 245, 255, 0.3)',
+                animate={{ 
+                  opacity: isActive ? 0.35 : 0,
+                  height: isActive ? '32px' : '0px'
                 }}
-                transition={{ duration: 0.4 }}
-                className={`w-2.5 h-2.5 rounded-full ${isActive ? 'animate-status-dot' : ''}`}
+                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+                className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[2px] pointer-events-none z-0"
                 style={{
-                  boxShadow: isActive
-                    ? '0 0 8px rgba(0, 245, 255, 0.6)'
-                    : '0 0 4px rgba(0, 245, 255, 0.15)',
+                  background: 'linear-gradient(to bottom, rgba(0, 245, 255, 0.4), transparent)'
                 }}
               />
-              <span className="text-sm text-muted-foreground font-mono tracking-wider">
-                {isActive ? 'ACTIVE' : 'STANDBY'}
-              </span>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* Panels with AnimatePresence */}
           <AnimatePresence mode="wait">
             {isActive ? (
-              <ScanningLineAnimation key="scanner" />
+              <ScanningLineAnimation key="scanner" isActive={isActive} />
             ) : (
               <motion.div
                 key="idle"

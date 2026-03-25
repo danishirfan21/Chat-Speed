@@ -14,6 +14,9 @@
   --border: #1F3A52;
   --ring: #00F5FF;
 
+  /* GPU Acceleration Hint */
+  --gpu-hint: transform, opacity;
+
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
 
@@ -32,6 +35,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  will-change: var(--gpu-hint);
 }
 
 /* ═══════════════════════════════════════════════
@@ -101,7 +105,7 @@ body {
   background: radial-gradient(
     ellipse at center,
     transparent 50%,
-    rgba(0, 0, 0, 0.5) 100%
+    rgba(0, 0, 0, 0.35) 100%
   );
   pointer-events: none;
   z-index: 50;
@@ -122,28 +126,6 @@ body {
   to   { transform: rotate(0deg); }
 }
 
-/* Subtle breathing (scale + opacity) */
-@keyframes reactor-breathe-active {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.04);
-    opacity: 0.92;
-  }
-}
-
-@keyframes reactor-breathe-standby {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scale(1.01);
-    opacity: 0.55;
-  }
-}
 
 /* Quick outward pulse burst on activation */
 @keyframes reactor-pulse-burst {
@@ -197,12 +179,12 @@ body {
 /* Status dot soft glow */
 @keyframes status-dot-pulse {
   0%, 100% {
-    box-shadow: 0 0 6px rgba(0, 245, 255, 0.6),
-                0 0 12px rgba(0, 245, 255, 0.3);
+    transform: scale(1);
+    opacity: 0.8;
   }
   50% {
-    box-shadow: 0 0 12px rgba(0, 245, 255, 0.9),
-                0 0 24px rgba(0, 245, 255, 0.5);
+    transform: scale(1.05);
+    opacity: 1;
   }
 }
 
@@ -222,20 +204,13 @@ body {
   animation: reactor-ring-spin 8s linear infinite;
 }
 
-.animate-breathe-active {
-  animation: reactor-breathe-active 4s ease-in-out infinite;
-}
-
-.animate-breathe-standby {
-  animation: reactor-breathe-standby 6s ease-in-out infinite;
-}
 
 .animate-pulse-burst {
   animation: reactor-pulse-burst 0.6s ease-out forwards;
 }
 
 .animate-scan-horizontal {
-  animation: scan-horizontal 3s ease-in-out infinite;
+  animation: scan-horizontal 4s ease-in-out infinite;
 }
 
 .animate-signal-bar {

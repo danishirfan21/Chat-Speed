@@ -3,21 +3,22 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-// Generate organic-feeling signal bars with varied timing
-function useSignalBars(count: number) {
-  return useMemo(() => {
-    return Array.from({ length: count }, (_, i) => ({
-      id: i,
-      left: `${8 + (i / count) * 84}%`,
-      duration: 1.8 + Math.random() * 2,
-      delay: Math.random() * 2,
-      height: 30 + Math.random() * 50,
-    }));
-  }, [count]);
+
+interface ScanningLineAnimationProps {
+  isActive?: boolean;
 }
 
-export default function ScanningLineAnimation() {
-  const signalBars = useSignalBars(10);
+export default function ScanningLineAnimation({ isActive = true }: ScanningLineAnimationProps) {
+  const signalBars = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => ({
+      id: i,
+      left: `${4 + (i / 12) * 92}%`,
+      duration: 1.2 + Math.random() * 4.5,
+      delay: Math.random() * -12, // Even wider delay offset
+      baseHeight: 12 + Math.random() * 65,
+      glowOpacity: 0.15 + Math.random() * 0.6,
+    }));
+  }, []);
 
   return (
     <motion.div
@@ -27,6 +28,31 @@ export default function ScanningLineAnimation() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="mb-8 relative h-32 overflow-hidden rounded-xl glass-card-elevated p-6"
     >
+      {/* Baseline glow (bottom edge) */}
+      {/* Baseline glow (bottom edge) — reacts to reactor power with slight delay */}
+      <motion.div
+        initial={false}
+        animate={{
+          opacity: isActive ? 1 : 0.3,
+          height: isActive ? '2px' : '1px',
+        }}
+        transition={{ delay: 0.15, duration: 0.8, ease: 'easeOut' }}
+        className="absolute bottom-0 left-0 right-0 z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent 5%, rgba(0, 245, 255, 0.4) 30%, rgba(0, 245, 255, 0.6) 50%, rgba(0, 245, 255, 0.4) 70%, transparent 95%)',
+          boxShadow: isActive ? '0 0 10px rgba(0, 245, 255, 0.2)' : 'none',
+        }}
+      />
+
+      {/* Subtle Gradient Sweep (Option B — slow 3s loop) */}
+      <motion.div
+        animate={{ x: ['-100%', '200%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-0 bottom-0 w-1/2 pointer-events-none z-0 opacity-[0.04]"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.15), transparent)',
+        }}
+      />
       {/* Title */}
       <div className="absolute top-4 left-6 z-10">
         <h3 className="text-xs font-semibold text-[#00F5FF] uppercase tracking-wider opacity-80">
@@ -65,8 +91,9 @@ export default function ScanningLineAnimation() {
       <div
         className="absolute top-0 bottom-0 w-[2px] animate-scan-horizontal z-20"
         style={{
-          background: 'linear-gradient(180deg, transparent, rgba(0, 245, 255, 0.9), transparent)',
-          boxShadow: '0 0 12px rgba(0, 245, 255, 0.6), 0 0 24px rgba(0, 245, 255, 0.3)',
+          background: 'linear-gradient(180deg, transparent, rgba(0, 245, 255, 0.5), transparent)',
+          boxShadow: '0 0 6px rgba(0, 245, 255, 0.3)',
+          filter: 'blur(1px)',
         }}
       />
 
@@ -79,17 +106,27 @@ export default function ScanningLineAnimation() {
         }}
       />
 
-      {/* ── Signal Activity Bars (organic) ── */}
+      {/* ── Signal Activity Bars (organic & reactive with delay) ── */}
       {signalBars.map((bar) => (
-        <div
+        <motion.div
           key={bar.id}
-          className="absolute bottom-0 w-[2px] animate-signal-bar"
+          animate={{
+            height: isActive ? [`${bar.baseHeight}%`, `${bar.baseHeight * 1.3}%`, `${bar.baseHeight}%`] : `${bar.baseHeight * 0.3}%`,
+            opacity: isActive ? [bar.glowOpacity, bar.glowOpacity + 0.2, bar.glowOpacity] : 0.15,
+          }}
+          transition={{
+            duration: bar.duration,
+            repeat: Infinity,
+            delay: isActive ? (bar.delay + 0.15) : bar.delay, // 150ms Influence of reactor pulse delay
+            ease: 'easeInOut',
+          }}
+          className="absolute bottom-0 w-[1.5px]"
           style={{
             left: bar.left,
-            height: `${bar.height}%`,
-            animationDuration: `${bar.duration}s`,
-            animationDelay: `${bar.delay}s`,
-            background: `linear-gradient(0deg, rgba(0, 245, 255, 0.6), rgba(0, 245, 255, 0.1))`,
+            background: isActive 
+              ? `linear-gradient(0deg, rgba(0, 245, 255, 0.7), rgba(0, 245, 255, 0.1))`
+              : `rgba(0, 245, 255, 0.2)`,
+            filter: 'blur(0.3px)',
           }}
         />
       ))}
@@ -100,7 +137,7 @@ export default function ScanningLineAnimation() {
           key={`wave-${index}`}
           animate={{
             left: ['0%', '100%'],
-            opacity: [0.5, 0.2, 0],
+            opacity: [0.25, 0.1, 0],
           }}
           transition={{
             duration: 3.5,
