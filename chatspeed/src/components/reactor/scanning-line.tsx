@@ -1,13 +1,35 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
+// Generate organic-feeling signal bars with varied timing
+function useSignalBars(count: number) {
+  return useMemo(() => {
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: `${8 + (i / count) * 84}%`,
+      duration: 1.8 + Math.random() * 2,
+      delay: Math.random() * 2,
+      height: 30 + Math.random() * 50,
+    }));
+  }, [count]);
+}
+
 export default function ScanningLineAnimation() {
+  const signalBars = useSignalBars(10);
+
   return (
-    <div className="mb-8 relative h-32 overflow-hidden rounded-xl glass-card-elevated p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="mb-8 relative h-32 overflow-hidden rounded-xl glass-card-elevated p-6"
+    >
       {/* Title */}
       <div className="absolute top-4 left-6 z-10">
-        <h3 className="text-xs font-semibold text-primary uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-[#00F5FF] uppercase tracking-wider opacity-80">
           Data Stream Monitor
         </h3>
       </div>
@@ -18,19 +40,19 @@ export default function ScanningLineAnimation() {
           backgroundPosition: ['0% 0%', '0% 100%'],
         }}
         transition={{
-          duration: 3,
+          duration: 4,
           repeat: Infinity,
           ease: 'linear',
         }}
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-20"
         style={{
           background: `
-            linear-gradient(0deg, 
-              rgba(0, 245, 255, 0.1) 1px, 
+            linear-gradient(0deg,
+              rgba(0, 245, 255, 0.08) 1px,
               transparent 1px
             ),
-            linear-gradient(90deg, 
-              rgba(0, 245, 255, 0.05) 1px, 
+            linear-gradient(90deg,
+              rgba(0, 245, 255, 0.04) 1px,
               transparent 1px
             )
           `,
@@ -39,90 +61,67 @@ export default function ScanningLineAnimation() {
         }}
       />
 
-      {/* Scanning Line */}
-      <motion.div
-        animate={{
-          top: ['0%', '100%'],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
-        className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent z-20"
+      {/* ── Horizontal Scanning Line ── */}
+      <div
+        className="absolute top-0 bottom-0 w-[2px] animate-scan-horizontal z-20"
         style={{
-          boxShadow: '0 0 20px rgba(0, 245, 255, 0.8)',
+          background: 'linear-gradient(180deg, transparent, rgba(0, 245, 255, 0.9), transparent)',
+          boxShadow: '0 0 12px rgba(0, 245, 255, 0.6), 0 0 24px rgba(0, 245, 255, 0.3)',
         }}
       />
 
-      {/* Vertical Scanning Bars */}
-      {[0, 25, 50, 75].map((position) => (
-        <motion.div
-          key={position}
-          animate={{
-            opacity: [0, 0.5, 0],
-            scaleY: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: position / 100,
-            ease: 'easeInOut',
-          }}
-          className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-accent via-accent to-transparent"
+      {/* ── Scanning Line Glow Trail ── */}
+      <div
+        className="absolute top-0 bottom-0 w-16 animate-scan-horizontal z-10"
+        style={{
+          background: 'linear-gradient(90deg, rgba(0, 245, 255, 0.08), transparent)',
+          filter: 'blur(8px)',
+        }}
+      />
+
+      {/* ── Signal Activity Bars (organic) ── */}
+      {signalBars.map((bar) => (
+        <div
+          key={bar.id}
+          className="absolute bottom-0 w-[2px] animate-signal-bar"
           style={{
-            left: `${position}%`,
+            left: bar.left,
+            height: `${bar.height}%`,
+            animationDuration: `${bar.duration}s`,
+            animationDelay: `${bar.delay}s`,
+            background: `linear-gradient(0deg, rgba(0, 245, 255, 0.6), rgba(0, 245, 255, 0.1))`,
           }}
         />
       ))}
 
-      {/* Data Wave Pulses */}
+      {/* ── Data Wave Pulses ── */}
       {[0, 1, 2].map((index) => (
         <motion.div
           key={`wave-${index}`}
           animate={{
             left: ['0%', '100%'],
-            opacity: [0.8, 0.4, 0],
+            opacity: [0.5, 0.2, 0],
           }}
           transition={{
-            duration: 2.5,
+            duration: 3.5,
             repeat: Infinity,
-            delay: index * 0.8,
+            delay: index * 1.1,
             ease: 'easeOut',
           }}
-          className="absolute top-1/4 h-1/2 w-16 bg-gradient-to-r from-accent/20 via-accent/40 to-transparent blur-xl"
+          className="absolute top-1/4 h-1/2 w-20 bg-gradient-to-r from-[rgba(0,245,255,0.1)] via-[rgba(0,245,255,0.2)] to-transparent blur-xl"
         />
       ))}
 
-      {/* Hud Elements */}
+      {/* ── HUD Elements — Terminal Output ── */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <motion.div
-          animate={{
-            opacity: [0.3, 0.8, 0.3],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-          }}
-          className="text-center"
-        >
-          <div className="text-xs text-accent font-mono tracking-wider">
+        <div className="text-center animate-terminal-flicker">
+          <div className="text-xs text-[#00F5FF] font-mono tracking-wider opacity-80">
             {'< '}
-            <motion.span
-              animate={{
-                opacity: [1, 0, 1],
-              }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-              }}
-            >
-              INTERCEPTING
-            </motion.span>
+            <span className="inline-block">INTERCEPTING</span>
             {' />'}
           </div>
-        </motion.div>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

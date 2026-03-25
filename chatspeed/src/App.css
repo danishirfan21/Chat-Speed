@@ -13,44 +13,30 @@
   --muted-foreground: #8FA3BF;
   --border: #1F3A52;
   --ring: #00F5FF;
-  
-  /* Standard Tailwind variables from v4 plan converted to v3/standard CSS */
+
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
-  
-  /* Additional Tailwind 4-to-3 Variables */
+
   --radius-sm: calc(0.625rem - 4px);
   --radius-md: calc(0.625rem - 2px);
   --radius-lg: 0.625rem;
   --radius-xl: calc(0.625rem + 4px);
-}
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  /* Reactor color tokens */
+  --cyan-bright: rgba(0, 245, 255, 0.9);
+  --cyan-mid: rgba(0, 245, 255, 0.5);
+  --cyan-dim: rgba(0, 245, 255, 0.15);
+  --cyan-glow: rgba(0, 245, 255, 0.4);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* ═══════════════════════════════════════════════
+   GLASSMORPHISM
+   ═══════════════════════════════════════════════ */
 
 .glass-card {
   background: rgba(10, 20, 30, 0.6);
@@ -60,13 +46,30 @@ body {
 }
 
 .glass-card-elevated {
+  position: relative;
   background: rgba(10, 20, 30, 0.75);
   backdrop-filter: blur(24px);
   border: 1px solid rgba(0, 255, 255, 0.12);
   border-radius: 16px;
   box-shadow:
     0 0 20px rgba(0, 255, 255, 0.08),
-    inset 0 0 20px rgba(0, 255, 255, 0.05);
+    inset 0 0 20px rgba(0, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Top-edge highlight for glass panels */
+.glass-card-elevated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 245, 255, 0.06) 0%,
+    transparent 30%
+  );
+  pointer-events: none;
 }
 
 .neon-glow {
@@ -77,16 +80,181 @@ body {
 
 /* Circuit Board Texture Overlay */
 .circuit-texture {
-  background-image: 
+  background-image:
     linear-gradient(0deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
-@layer base {
-  * {
-    /* removed global @apply border-border; */
+/* ═══════════════════════════════════════════════
+   VIGNETTE
+   ═══════════════════════════════════════════════ */
+
+.vignette {
+  position: relative;
+}
+
+.vignette::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* ═══════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ═══════════════════════════════════════════════ */
+
+/* Concentric ring rotation */
+@keyframes reactor-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes reactor-ring-spin-reverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+/* Subtle breathing (scale + opacity) */
+@keyframes reactor-breathe-active {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
+}
+
+@keyframes reactor-breathe-standby {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.01);
+    opacity: 0.55;
+  }
+}
+
+/* Quick outward pulse burst on activation */
+@keyframes reactor-pulse-burst {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Horizontal scanning line */
+@keyframes scan-horizontal {
+  0% {
+    left: -10%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 110%;
+    opacity: 0;
+  }
+}
+
+/* Signal bar flicker (organic) */
+@keyframes signal-bar-flicker {
+  0%, 100% { opacity: 0; height: 20%; }
+  15%      { opacity: 0.7; height: 60%; }
+  30%      { opacity: 0.3; height: 35%; }
+  50%      { opacity: 0.9; height: 80%; }
+  65%      { opacity: 0.4; height: 45%; }
+  80%      { opacity: 0.6; height: 55%; }
+}
+
+/* Terminal text flicker (subtle, readable) */
+@keyframes terminal-flicker {
+  0%, 100% { opacity: 1; }
+  20%      { opacity: 0.75; }
+  40%      { opacity: 0.9; }
+  60%      { opacity: 0.65; }
+  80%      { opacity: 0.95; }
+}
+
+/* Status dot soft glow */
+@keyframes status-dot-pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(0, 245, 255, 0.6),
+                0 0 12px rgba(0, 245, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(0, 245, 255, 0.9),
+                0 0 24px rgba(0, 245, 255, 0.5);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATION UTILITY CLASSES
+   ═══════════════════════════════════════════════ */
+
+.animate-ring-spin-slow {
+  animation: reactor-ring-spin 18s linear infinite;
+}
+
+.animate-ring-spin-mid {
+  animation: reactor-ring-spin-reverse 12s linear infinite;
+}
+
+.animate-ring-spin-fast {
+  animation: reactor-ring-spin 8s linear infinite;
+}
+
+.animate-breathe-active {
+  animation: reactor-breathe-active 4s ease-in-out infinite;
+}
+
+.animate-breathe-standby {
+  animation: reactor-breathe-standby 6s ease-in-out infinite;
+}
+
+.animate-pulse-burst {
+  animation: reactor-pulse-burst 0.6s ease-out forwards;
+}
+
+.animate-scan-horizontal {
+  animation: scan-horizontal 3s ease-in-out infinite;
+}
+
+.animate-signal-bar {
+  animation: signal-bar-flicker 2.5s ease-in-out infinite;
+}
+
+.animate-terminal-flicker {
+  animation: terminal-flicker 3s ease-in-out infinite;
+}
+
+.animate-status-dot {
+  animation: status-dot-pulse 2.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   TAILWIND BASE LAYER
+   ═══════════════════════════════════════════════ */
+
+@layer base {
   body {
     @apply bg-background text-foreground;
   }
