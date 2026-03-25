@@ -85,8 +85,7 @@ body {
 
 @layer base {
   * {
-    @apply border-border;
-    outline: 2px solid rgba(0, 245, 255, 0.5);
+    /* removed global @apply border-border; */
   }
   body {
     @apply bg-background text-foreground;
