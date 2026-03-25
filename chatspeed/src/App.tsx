@@ -116,13 +116,14 @@ const App = () => {
               {/* ── Energy Continuity Beam ── */}
               <motion.div
                 animate={{ 
-                  opacity: isActive ? 0.35 : 0,
-                  height: isActive ? '32px' : '0px'
+                  opacity: isActive ? 0.6 : 0.2,
+                  height: '40px'
                 }}
                 transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
-                className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[2px] pointer-events-none z-0"
+                className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[1px] pointer-events-none z-0"
                 style={{
-                  background: 'linear-gradient(to bottom, rgba(0, 245, 255, 0.4), transparent)'
+                  background: 'linear-gradient(to bottom, rgba(0,245,255,0.4), rgba(0,245,255,0.05), transparent)',
+                  filter: 'blur(0.5px)',
                 }}
               />
             </div>
