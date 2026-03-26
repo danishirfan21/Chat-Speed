@@ -296,6 +296,21 @@ const App = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* 7. SYSTEM HUD FOOTER */}
+        <div className="flex-none flex justify-center mt-auto mb-5">
+          <motion.a
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 1 }}
+            href="https://github.com/danishirfan21/Chat-Speed"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`hud-link ${isActive ? 'hud-link-active' : 'hud-link-standby'}`}
+          >
+            {isActive ? '< LIVE TRACE AVAILABLE />' : '< SOURCE AVAILABLE />'}
+          </motion.a>
+        </div>
       </div>
     </div>
   );
