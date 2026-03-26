@@ -36,26 +36,26 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden vignette">
+    <div className="w-[420px] h-[640px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
       {/* Background Gradient Mesh */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,245,255,0.03)] via-background to-background" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-[rgba(0,245,255,0.04)] rounded-full blur-3xl opacity-20" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-[rgba(0,245,255,0.03)] rounded-full blur-3xl opacity-15" />
       </div>
 
       {/* Circuit Board Texture */}
-      <div className="fixed inset-0 circuit-texture pointer-events-none opacity-30" />
+      <div className="absolute inset-0 circuit-texture pointer-events-none opacity-30 z-0" />
 
       {/* Main Content */}
-      <div className="relative z-10">
-        {/* Master Control Section */}
-        <div className="px-6 py-8">
+      <div className="relative z-10 flex flex-col h-full w-full">
+        {/* 3. HEADER (TOP BAR) */}
+        <div className="flex-none h-[48px] px-5 pt-4 flex items-center w-full">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col items-center gap-2 mb-8"
+            className="w-full"
           >
             {/* ── Two-Layer Header ── */}
             <div className="w-full">
@@ -109,7 +109,7 @@ const App = () => {
 
               {/* Sub-header: Technical Identity */}
               <p
-                className="mt-1.5 text-[11px] font-semibold tracking-[0.25em] uppercase opacity-90 transition-all duration-500"
+                className="mt-0.5 text-[11px] font-semibold tracking-[0.25em] uppercase opacity-90 transition-all duration-500"
                 style={{
                   color: isActive ? 'rgba(0, 245, 255, 0.95)' : 'rgba(0, 245, 255, 0.6)',
                   textShadow: isActive 
@@ -120,8 +120,27 @@ const App = () => {
                 Surgical Network Graft
               </p>
             </div>
+          </motion.div>
+        </div>
 
-            {/* Reactor with Radial Background Glow */}
+        {/* 4. REACTOR SECTION */}
+        <div className="flex-none h-[160px] mt-[16px] relative flex flex-col items-center justify-center">
+          <motion.div
+            animate={{ 
+              opacity: isActive ? [0.65, 0.9, 0.75, 1] : [0.4, 0.6, 0.5, 0.6],
+              textShadow: isActive ? '0 0 12px rgba(0, 245, 255, 0.4)' : '0 0 6px rgba(0, 245, 255, 0.2)'
+            }}
+            transition={{ duration: isActive ? 2 : 4, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute bottom-3 text-[10px] font-mono tracking-[0.18em] text-[#00F5FF]/80 uppercase pointer-events-none"
+          >
+            {isActive ? 'Live Interception Active' : 'System ready to intercept'}
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="relative"
+          >
             <div className="relative">
               {/* Radial glow behind reactor */}
               <motion.div
@@ -141,7 +160,7 @@ const App = () => {
               <motion.div
                 animate={{ 
                   opacity: isActive ? 0.6 : 0.2,
-                  height: '40px'
+                  height: '30px'
                 }}
                 transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
                 className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[1px] pointer-events-none z-0"
@@ -152,33 +171,45 @@ const App = () => {
               />
             </div>
           </motion.div>
+        </div>
 
-          {/* Panels with AnimatePresence */}
-          <AnimatePresence mode="wait">
-            {isActive ? (
-              <>
-              <ScanningLineAnimation key="scanner" isActive={isActive} />
+        {/* 5. DATA STREAM MONITOR */}
+        <div className="flex-none h-[130px] mt-[24px] px-5">
+          <ScanningLineAnimation isActive={isActive} />
+        </div>
+
+        {/* Panels with AnimatePresence */}
+        <AnimatePresence mode="wait">
+          {isActive ? (
+            <>
+            {/* 6. METRICS SECTION - 2 Column Grid */}
+            <motion.div
+              key="metrics-zone"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex-1 mt-[20px] relative min-h-0 flex flex-col"
+            >
+              {/* Top divider glow & inner depth fade */}
+              <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-[rgba(0,245,255,0.25)] to-transparent z-20 pointer-events-none" />
+              <div className="absolute top-0 left-5 right-5 h-[40px] bg-gradient-to-b from-[rgba(0,245,255,0.04)] to-transparent z-10 pointer-events-none rounded-t-lg" />
               
-              {/* METRICS SECTION - Core Focus Area with enhanced depth */}
-              {isActive && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                  className="px-4 py-5 space-y-3 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent/0 relative section-depth card-edge-highlight"
-                  style={{
-                    boxShadow: 'inset 0 1px 4px rgba(0, 245, 255, 0.12)',
-                  }}
-                >
-                  {/* RAM Saved Card - Enhanced with lit panel effect */}
-                  <motion.div
-                    whileHover={{ y: -2 }}
-                    transition={{ duration: 0.2 }}
-                    className="metric-card metric-card-cyan p-3 rounded-lg group cursor-default"
-                  >
-                    <div className="flex items-start justify-between mb-2.5 relative z-10">
-                      <div className="flex-1">
-                        <p className="metric-label">RAM Saved</p>
+              <div 
+                className="flex-1 grid grid-cols-2 gap-4 px-5 pb-5 pt-[14px] rounded-lg bg-gradient-to-b from-white/[0.03] to-transparent/0 relative section-depth card-edge-highlight overflow-hidden items-start"
+                style={{
+                  boxShadow: 'inset 0 1px 4px rgba(0, 245, 255, 0.12), inset 0 6px 15px -10px rgba(0, 245, 255, 0.15)'
+                }}
+              >
+                {/* RAM Saved Card - Enhanced with lit panel effect */}
+              <motion.div
+                whileHover={{ y: -1 }}
+                transition={{ duration: 0.2 }}
+                className="metric-card metric-card-cyan p-3 rounded-lg group cursor-default"
+              >
+                <div className="flex items-start justify-between mb-1.5 relative z-10">
+                  <div className="flex-1">
+                    <p className="metric-label">RAM Saved</p>
                         <motion.p
                           key={ramSaved}
                           animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
@@ -210,11 +241,11 @@ const App = () => {
 
                   {/* Nodes Pruned Card - Enhanced with lit panel effect */}
                   <motion.div
-                    whileHover={{ y: -2 }}
+                    whileHover={{ y: -1 }}
                     transition={{ duration: 0.2 }}
                     className="metric-card metric-card-gold p-3 rounded-lg group cursor-default"
                   >
-                    <div className="flex items-start justify-between mb-2.5 relative z-10">
+                    <div className="flex items-start justify-between mb-1.5 relative z-10">
                       <div className="flex-1">
                         <p className="metric-label">Nodes Pruned</p>
                         <motion.p
@@ -245,27 +276,26 @@ const App = () => {
                       style={{ backgroundSize: '200% 100%' }}
                     />
                   </motion.div>
-                </motion.div>
-              )}
-              </>
-            ) : (
-              <motion.div
-                key="idle"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-                className="flex justify-center"
-              >
-                <div className="glass-card px-8 py-6 max-w-md text-center">
-                  <p className="text-muted-foreground text-sm">
-                    Enable ChatSpeed to start intercepting and pruning ChatGPT's JSON data streams in real-time.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div> {/* Close scrolling div wrapper */}
+            </motion.div>
+            </>
+          ) : (
+            <motion.div
+              key="idle"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="flex-1 mt-[24px] px-8 flex items-start justify-center min-h-0"
+            >
+              <div className="px-4 py-3.5 text-center w-full bg-white/[0.02] border border-white/[0.04] rounded-xl shadow-none transition-all duration-700">
+                <p className="text-[#00F5FF]/40 text-[11px] leading-snug tracking-wide font-medium">
+                  Enable ChatSpeed to start intercepting and pruning ChatGPT&apos;s JSON data streams in real-time.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

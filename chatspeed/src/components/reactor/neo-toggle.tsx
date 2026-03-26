@@ -126,18 +126,18 @@ export default function NeoSkeuomorphicToggle({
         {/* ── Central Crystal Core (radial gradient for depth) ── */}
         <motion.div
           animate={{
-            scale: isActive ? 1.1 : 1,
+            scale: isActive ? 1.12 : 1,
             boxShadow: isActive
-              ? `0 0 30px ${cyanBright}, inset 0 0 20px rgba(0, 245, 255, 0.35)`
-              : `0 0 10px rgba(0, 245, 255, 0.1), inset 0 0 8px rgba(0, 245, 255, 0.05)`,
+              ? `0 0 40px ${cyanBright}, inset 0 0 25px rgba(0, 245, 255, 0.45)`
+              : `0 0 4px rgba(0, 245, 255, 0.05), inset 0 0 4px rgba(0, 245, 255, 0.03)`,
           }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 1.2, ease: 'easeInOut' }}
           className="absolute inset-6 rounded-full backdrop-blur-sm border-2"
           style={{
             borderColor: isActive ? cyanMid : cyanDim,
             background: isActive
-              ? 'radial-gradient(circle at 40% 35%, rgba(0, 245, 255, 0.4), rgba(0, 245, 255, 0.1) 60%, rgba(5, 8, 10, 0.8))'
-              : 'radial-gradient(circle at 40% 35%, rgba(0, 245, 255, 0.1), rgba(0, 245, 255, 0.03) 60%, rgba(5, 8, 10, 0.9))',
+              ? 'radial-gradient(circle at 40% 35%, rgba(0, 245, 255, 0.5), rgba(0, 245, 255, 0.15) 60%, rgba(5, 8, 10, 0.8))'
+              : 'radial-gradient(circle at 40% 35%, rgba(0, 245, 255, 0.05), rgba(0, 245, 255, 0.01) 60%, rgba(5, 8, 10, 0.95))',
           }}
         >
           {/* Specular highlight for 3D glass effect */}
@@ -198,17 +198,17 @@ export default function NeoSkeuomorphicToggle({
         {/* ── Outer Glow Ring (always visible, brighter when active) ── */}
         <motion.div
           animate={{
-            opacity: isActive ? [0.55, 0.38, 0.55] : [0.12, 0.06, 0.12],
-            scale: isActive ? [1, 1.12, 1] : [1, 1.02, 1],
+            opacity: isActive ? [0.65, 0.45, 0.65] : [0.08, 0.03, 0.08],
+            scale: isActive ? [1, 1.15, 1] : [1, 1.01, 1],
           }}
           transition={{
-            duration: isActive ? 3 : 6,
+            duration: isActive ? 3 : 8,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
           className="absolute -inset-3 rounded-full pointer-events-none"
           style={{
-            border: `1.5px solid rgba(0, 245, 255, ${isActive ? 0.3 : 0.05})`,
+            border: `1.5px solid rgba(0, 245, 255, ${isActive ? 0.35 : 0.03})`,
             willChange: 'transform, opacity',
           }}
         />

@@ -50,20 +50,24 @@
   }
 }
 
+html, body {
+  width: 420px;
+  height: 640px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 #root {
-  width: 1126px;
+  width: 420px;
+  height: 640px;
   max-width: 100%;
   margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  text-align: left;
+  border-inline: none;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-}
-
-body {
-  margin: 0;
 }
 
 h1,

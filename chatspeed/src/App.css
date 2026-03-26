@@ -61,13 +61,13 @@ body {
   position: relative;
   background: rgba(10, 20, 30, 0.75);
   backdrop-filter: blur(24px);
-  border: 1px solid rgba(0, 255, 255, 0.12);
+  border: 1px solid rgba(0, 255, 255, 0.08);
   border-radius: 16px;
   box-shadow:
-    0 0 20px rgba(0, 255, 255, 0.08),
-    inset 0 0 20px rgba(0, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    0 0 15px rgba(0, 255, 255, 0.05),
+    inset 0 0 20px rgba(0, 255, 255, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* Top-edge highlight for glass panels */
@@ -78,8 +78,8 @@ body {
   border-radius: inherit;
   background: linear-gradient(
     180deg,
-    rgba(0, 245, 255, 0.06) 0%,
-    transparent 30%
+    rgba(0, 245, 255, 0.03) 0%,
+    transparent 50%
   );
   pointer-events: none;
 }
@@ -247,7 +247,7 @@ body {
 /* Metric card styling */
 .metric-card {
   background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.08) 0%,
     rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid;
   position: relative;
@@ -255,6 +255,7 @@ body {
               box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* Cyan metric card (RAM) */
@@ -363,7 +364,7 @@ body {
 
 .metric-value {
   font-weight: 700;
-  font-size: 1.875rem;
+  font-size: 1.625rem;
   letter-spacing: -0.02em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   line-height: 1.1;
