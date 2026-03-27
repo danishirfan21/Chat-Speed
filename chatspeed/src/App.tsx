@@ -196,7 +196,7 @@ const App = () => {
               <div className="absolute top-0 left-5 right-5 h-[40px] bg-gradient-to-b from-[rgba(0,245,255,0.04)] to-transparent z-10 pointer-events-none rounded-t-lg" />
               
               <div 
-                className="flex-1 grid grid-cols-2 gap-4 px-5 pb-5 pt-[14px] rounded-lg bg-gradient-to-b from-white/[0.03] to-transparent/0 relative section-depth card-edge-highlight overflow-hidden items-start"
+                className="grid grid-cols-2 gap-4 mx-[20px] px-5 pb-5 pt-[14px] rounded-lg bg-gradient-to-b from-white/[0.03] to-transparent/0 relative section-depth card-edge-highlight overflow-hidden items-start"
                 style={{
                   boxShadow: 'inset 0 1px 4px rgba(0, 245, 255, 0.12), inset 0 6px 15px -10px rgba(0, 245, 255, 0.15)'
                 }}
