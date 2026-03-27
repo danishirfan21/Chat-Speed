@@ -228,15 +228,7 @@ const App = () => {
                         ⚡
                       </motion.span>
                     </div>
-                    <motion.div
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3],
-                        backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'],
-                      }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                      className="h-px rounded-full bg-gradient-to-r from-transparent via-accent/70 to-transparent relative z-10"
-                      style={{ backgroundSize: '200% 100%' }}
-                    />
+                    <div className="metric-underline metric-underline-cyan mt-1" />
                   </motion.div>
 
                   {/* Nodes Pruned Card - Enhanced with lit panel effect */}
@@ -266,15 +258,7 @@ const App = () => {
                         ✂️
                       </motion.span>
                     </div>
-                    <motion.div
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3],
-                        backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'],
-                      }}
-                      transition={{ duration: 3, repeat: Infinity, delay: 0.3 }}
-                      className="h-px rounded-full bg-gradient-to-r from-transparent via-primary/70 to-transparent relative z-10"
-                      style={{ backgroundSize: '200% 100%' }}
-                    />
+                    <div className="metric-underline metric-underline-gold mt-1" />
                   </motion.div>
               </div> {/* Close scrolling div wrapper */}
             </motion.div>

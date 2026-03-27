@@ -420,3 +420,32 @@ body {
 .hud-link:hover::after {
   transform: scaleX(0.8);
 }
+
+/* Animated gradient line for metric cards */
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+.metric-underline {
+  height: 1px;
+  border-radius: 9999px;
+  background-size: 200% 100%;
+  animation: gradient-shift 3s ease-in-out infinite;
+}
+
+.metric-underline-cyan {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 245, 255, 0.7) 50%, transparent 100%);
+}
+
+.metric-underline-gold {
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 175, 55, 0.7) 50%, transparent 100%);
+}
