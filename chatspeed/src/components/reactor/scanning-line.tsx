@@ -40,7 +40,7 @@ export default function ScanningLineAnimation({ isActive = true }: ScanningLineA
           : 'inset 0 0 10px rgba(0, 245, 255, 0.01), 0 4px 10px rgba(0, 0, 0, 0.1)'
       }}
       exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 1.5, ease: 'easeInOut' }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className="relative h-full overflow-hidden rounded-xl border backdrop-blur-[12px] p-4"
     >
       {/* ── Suble Noise Layer ── */}
@@ -61,7 +61,7 @@ export default function ScanningLineAnimation({ isActive = true }: ScanningLineA
         }}
         transition={{ 
           opacity: { duration: isActive ? 0.2 : 3, repeat: Infinity, repeatType: 'reverse' },
-          height: { delay: 0.15, duration: 1.2, ease: 'easeInOut' } 
+          height: { duration: 0.3, ease: 'easeOut' } 
         }}
         className="absolute bottom-0 left-0 right-0 z-10"
         style={{
@@ -165,10 +165,10 @@ export default function ScanningLineAnimation({ isActive = true }: ScanningLineA
               animate={{
                 height: isActive 
                   ? [`${bar.baseHeight}%`, `${(bar.baseHeight + (bar.isSpike ? 25 : 5))}%`, `${bar.baseHeight}%`] 
-                  : [`${bar.baseHeight * 0.15}%`, `${(bar.baseHeight * 0.2) + (bar.isSpike ? 8 : 0)}%`, `${bar.baseHeight * 0.15}%`],
+                  : [`${bar.baseHeight * 0.08}%`, `${bar.baseHeight * 0.12}%`, `${bar.baseHeight * 0.08}%`],
                 opacity: isActive 
                   ? [bar.glowOpacity, bar.glowOpacity + (bar.isSpike ? 0.3 : 0.1), bar.glowOpacity] 
-                  : [0.05, 0.1 + (bar.isSpike ? 0.15 : 0), 0.05],
+                  : [0.02, 0.06, 0.02],
               }}
               transition={{
                 duration: isActive ? bar.duration : bar.duration * 3,
@@ -183,7 +183,7 @@ export default function ScanningLineAnimation({ isActive = true }: ScanningLineA
                 left: bar.left,
                 background: isActive 
                   ? `linear-gradient(0deg, rgba(0, 245, 255, 0.8), rgba(0, 245, 255, 0.1))`
-                  : `rgba(0, 245, 255, 0.2)`,
+                  : `rgba(0, 245, 255, 0.15)`,
                 filter: `blur(${bar.isSpike && isActive ? 0.6 : 0.3}px)`,
                 willChange: 'height, opacity',
               }}

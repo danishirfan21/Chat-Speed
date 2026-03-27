@@ -388,12 +388,12 @@ body {
 }
 
 .hud-link-standby {
-  color: rgba(0, 245, 255, 0.45);
-  text-shadow: 0 0 8px rgba(0, 245, 255, 0.1);
+  color: rgba(0, 245, 255, 0.35);
+  text-shadow: 0 0 8px rgba(0, 245, 255, 0.05);
 }
 
 .hud-link-active {
-  color: rgba(0, 245, 255, 0.75);
+  color: rgba(0, 245, 255, 0.55);
   text-shadow: 0 0 12px rgba(0, 245, 255, 0.3), 0 0 4px rgba(0, 245, 255, 0.1);
 }
 

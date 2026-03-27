@@ -124,7 +124,7 @@ const App = () => {
         </div>
 
         {/* 4. REACTOR SECTION */}
-        <div className="flex-none h-[150px] mt-[12px] relative flex flex-col items-center justify-center">
+        <div className="flex-none h-[150px] mt-[20px] relative flex flex-col items-center justify-center">
           <motion.div
             animate={{ 
               opacity: isActive ? [0.65, 0.9, 0.75, 1] : [0.4, 0.6, 0.5, 0.6],
@@ -148,7 +148,7 @@ const App = () => {
                   opacity: isActive ? 0.5 : 0.15,
                   scale: isActive ? 1.2 : 0.9,
                 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="absolute inset-0 -m-16 rounded-full pointer-events-none"
                 style={{
                   background: 'radial-gradient(circle, rgba(0, 245, 255, 0.25), transparent 70%)',
@@ -162,7 +162,7 @@ const App = () => {
                   opacity: isActive ? 0.6 : 0.2,
                   height: '30px'
                 }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[1px] pointer-events-none z-0"
                 style={{
                   background: 'linear-gradient(to bottom, rgba(0,245,255,0.4), rgba(0,245,255,0.05), transparent)',
@@ -188,7 +188,7 @@ const App = () => {
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
               className="flex-1 mt-[16px] relative min-h-0 flex flex-col"
             >
               {/* Top divider glow & inner depth fade */}
@@ -269,7 +269,7 @@ const App = () => {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
               className="flex-1 mt-[20px] px-8 flex flex-col items-center justify-center min-h-0 relative z-20"
             >
               <div className="px-5 py-4 text-center w-full bg-white/[0.025] border border-white/[0.05] rounded-xl shadow-none">
@@ -282,7 +282,7 @@ const App = () => {
         </AnimatePresence>
         
         {/* 7. SYSTEM HUD FOOTER */}
-        <div className="flex-none flex justify-center mt-auto mb-6">
+        <div className="flex-none flex justify-center mt-auto mb-6 pt-3">
           <motion.a
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
