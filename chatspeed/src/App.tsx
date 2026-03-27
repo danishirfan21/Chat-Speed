@@ -36,7 +36,7 @@ const App = () => {
   };
 
   return (
-    <div className="w-[420px] min-h-[400px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
+    <div className="w-[420px] h-[560px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
       {/* Background Gradient Mesh */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,245,255,0.03)] via-background to-background" />
@@ -48,7 +48,7 @@ const App = () => {
       <div className="absolute inset-0 circuit-texture pointer-events-none opacity-30 z-0" />
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col w-full pb-8">
+      <div className="relative z-10 flex flex-col h-full w-full">
         {/* 3. HEADER (TOP BAR) */}
         <div className="flex-none h-[48px] px-5 pt-4 flex items-center w-full">
           <motion.div
@@ -270,7 +270,7 @@ const App = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.4 }}
-              className="flex-none mt-[20px] px-8 py-2 min-h-0"
+              className="flex-1 mt-[20px] px-8 flex flex-col items-center justify-center min-h-0 relative z-20"
             >
               <div className="px-5 py-4 text-center w-full bg-white/[0.025] border border-white/[0.05] rounded-xl shadow-none">
                 <p className="text-[#00F5FF]/50 text-[11px] leading-snug tracking-wide font-medium">
@@ -282,7 +282,7 @@ const App = () => {
         </AnimatePresence>
         
         {/* 7. SYSTEM HUD FOOTER */}
-        <div className="flex-none flex justify-center mt-8">
+        <div className="flex-none flex justify-center mt-auto mb-6">
           <motion.a
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
