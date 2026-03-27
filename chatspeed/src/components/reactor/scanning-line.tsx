@@ -168,7 +168,7 @@ export default function ScanningLineAnimation({ isActive = true }: ScanningLineA
                   : [`${bar.baseHeight * 0.08}%`, `${bar.baseHeight * 0.12}%`, `${bar.baseHeight * 0.08}%`],
                 opacity: isActive 
                   ? [bar.glowOpacity, bar.glowOpacity + (bar.isSpike ? 0.3 : 0.1), bar.glowOpacity] 
-                  : [0.02, 0.06, 0.02],
+                  : [0.1, 0.18, 0.1],
               }}
               transition={{
                 duration: isActive ? bar.duration : bar.duration * 3,
@@ -183,7 +183,7 @@ export default function ScanningLineAnimation({ isActive = true }: ScanningLineA
                 left: bar.left,
                 background: isActive 
                   ? `linear-gradient(0deg, rgba(0, 245, 255, 0.8), rgba(0, 245, 255, 0.1))`
-                  : `rgba(0, 245, 255, 0.15)`,
+                  : `rgba(0, 245, 255, 0.25)`,
                 filter: `blur(${bar.isSpike && isActive ? 0.6 : 0.3}px)`,
                 willChange: 'height, opacity',
               }}

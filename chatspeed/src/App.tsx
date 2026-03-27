@@ -131,7 +131,7 @@ const App = () => {
               textShadow: isActive ? '0 0 12px rgba(0, 245, 255, 0.4)' : '0 0 6px rgba(0, 245, 255, 0.2)'
             }}
             transition={{ duration: isActive ? 2 : 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute bottom-3 text-[10px] font-mono tracking-[0.18em] text-[#00F5FF]/80 uppercase pointer-events-none"
+            className="absolute bottom-1.5 text-[10px] font-mono tracking-[0.18em] text-[#00F5FF]/80 uppercase pointer-events-none"
           >
             {isActive ? 'Live Interception Active' : 'System ready to intercept'}
           </motion.div>
