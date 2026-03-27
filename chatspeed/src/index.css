@@ -52,15 +52,17 @@
 
 html, body {
   width: 420px;
-  height: 640px;
+  height: auto;
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 #root {
   width: 420px;
-  height: 640px;
+  min-height: 100%;
   max-width: 100%;
   margin: 0 auto;
   text-align: left;

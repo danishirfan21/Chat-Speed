@@ -36,7 +36,7 @@ const App = () => {
   };
 
   return (
-    <div className="w-[420px] h-[640px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
+    <div className="w-[420px] min-h-[400px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
       {/* Background Gradient Mesh */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,245,255,0.03)] via-background to-background" />
@@ -48,7 +48,7 @@ const App = () => {
       <div className="absolute inset-0 circuit-texture pointer-events-none opacity-30 z-0" />
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col h-full w-full">
+      <div className="relative z-10 flex flex-col w-full pb-8">
         {/* 3. HEADER (TOP BAR) */}
         <div className="flex-none h-[48px] px-5 pt-4 flex items-center w-full">
           <motion.div
@@ -124,7 +124,7 @@ const App = () => {
         </div>
 
         {/* 4. REACTOR SECTION */}
-        <div className="flex-none h-[160px] mt-[16px] relative flex flex-col items-center justify-center">
+        <div className="flex-none h-[150px] mt-[12px] relative flex flex-col items-center justify-center">
           <motion.div
             animate={{ 
               opacity: isActive ? [0.65, 0.9, 0.75, 1] : [0.4, 0.6, 0.5, 0.6],
@@ -174,7 +174,7 @@ const App = () => {
         </div>
 
         {/* 5. DATA STREAM MONITOR */}
-        <div className="flex-none h-[130px] mt-[24px] px-5">
+        <div className="flex-none h-[125px] mt-[20px] px-5">
           <ScanningLineAnimation isActive={isActive} />
         </div>
 
@@ -189,7 +189,7 @@ const App = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="flex-1 mt-[20px] relative min-h-0 flex flex-col"
+              className="flex-1 mt-[16px] relative min-h-0 flex flex-col"
             >
               {/* Top divider glow & inner depth fade */}
               <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-[rgba(0,245,255,0.25)] to-transparent z-20 pointer-events-none" />
@@ -266,14 +266,14 @@ const App = () => {
           ) : (
             <motion.div
               key="idle"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="flex-1 mt-[24px] px-8 flex items-start justify-center min-h-0"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.4 }}
+              className="flex-none mt-[20px] px-8 py-2 min-h-0"
             >
-              <div className="px-4 py-3.5 text-center w-full bg-white/[0.02] border border-white/[0.04] rounded-xl shadow-none transition-all duration-700">
-                <p className="text-[#00F5FF]/40 text-[11px] leading-snug tracking-wide font-medium">
+              <div className="px-5 py-4 text-center w-full bg-white/[0.025] border border-white/[0.05] rounded-xl shadow-none">
+                <p className="text-[#00F5FF]/50 text-[11px] leading-snug tracking-wide font-medium">
                   Enable ChatSpeed to start intercepting and pruning ChatGPT&apos;s JSON data streams in real-time.
                 </p>
               </div>
@@ -282,7 +282,7 @@ const App = () => {
         </AnimatePresence>
         
         {/* 7. SYSTEM HUD FOOTER */}
-        <div className="flex-none flex justify-center mt-auto mb-5">
+        <div className="flex-none flex justify-center mt-8">
           <motion.a
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
