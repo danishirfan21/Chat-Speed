@@ -423,29 +423,54 @@ body {
 
 /* Animated gradient line for metric cards */
 
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% center;
-  }
-  50% {
-    background-position: 100% center;
-  }
-  100% {
-    background-position: 0% center;
-  }
+@keyframes energy-flow-x {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes energy-pulse-subtle {
+  0%, 100% { opacity: var(--metric-pulse-min); filter: brightness(0.9); }
+  50% { opacity: var(--metric-pulse-max); filter: brightness(1.2); }
 }
 
 .metric-underline {
-  height: 1px;
+  height: 1.2px;
   border-radius: 9999px;
   background-size: 200% 100%;
-  animation: gradient-shift 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  
+  --flow-speed: 5s;
+  --pulse-speed: 4s;
+  --metric-pulse-min: 0.15;
+  --metric-pulse-max: 0.25;
+
+  animation: 
+    energy-flow-x var(--flow-speed) linear infinite,
+    energy-pulse-subtle var(--pulse-speed) ease-in-out infinite;
+}
+
+.metric-underline.active {
+  --flow-speed: 3.5s;
+  --pulse-speed: 3s;
+  --metric-pulse-min: 0.3;
+  --metric-pulse-max: 0.6;
+}
+
+.metric-underline.standby {
+  --flow-speed: 6s;
+  --pulse-speed: 5s;
+  --metric-pulse-min: 0.1;
+  --metric-pulse-max: 0.18;
 }
 
 .metric-underline-cyan {
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 245, 255, 0.7) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 245, 255, 0.5) 50%, transparent 100%);
+  box-shadow: 0 0 4px rgba(0, 245, 255, 0.1);
 }
 
 .metric-underline-gold {
-  background: linear-gradient(90deg, transparent 0%, rgba(212, 175, 55, 0.7) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 175, 55, 0.5) 50%, transparent 100%);
+  box-shadow: 0 0 4px rgba(212, 175, 55, 0.08);
+  animation-delay: -0.8s, -1.5s;
 }

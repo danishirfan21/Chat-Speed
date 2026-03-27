@@ -228,7 +228,7 @@ const App = () => {
                         ⚡
                       </motion.span>
                     </div>
-                    <div className="metric-underline metric-underline-cyan mt-1" />
+                    <div className={`metric-underline metric-underline-cyan mt-1 ${isActive ? 'active' : 'standby'}`} />
                   </motion.div>
 
                   {/* Nodes Pruned Card - Enhanced with lit panel effect */}
@@ -258,7 +258,7 @@ const App = () => {
                         ✂️
                       </motion.span>
                     </div>
-                    <div className="metric-underline metric-underline-gold mt-1" />
+                    <div className={`metric-underline metric-underline-gold mt-1 ${isActive ? 'active' : 'standby'}`} />
                   </motion.div>
               </div> {/* Close scrolling div wrapper */}
             </motion.div>
