@@ -1,0 +1,1 @@
+console.log('[ChatSpeed] Background service worker loaded');

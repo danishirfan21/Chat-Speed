@@ -21,6 +21,10 @@ const manifest = defineManifest({
       "128": "icon128.png",
     }
   },
+  background: {
+    service_worker: 'src/background.ts',
+    type: 'module' as const,
+  },
   content_scripts: [
     {
       js: ['src/content.tsx'],
