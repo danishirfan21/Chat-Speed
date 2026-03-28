@@ -1,3 +1,5 @@
+import { MESSAGE_TYPES } from "./lib/messages";
+
 type TabState = {
   enabled: boolean;
   nodesPruned: number;
@@ -31,12 +33,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return;
   }
 
-  if (msg.type === 'getState') {
+  if (msg.type === MESSAGE_TYPES.GET_STATE) {
     sendResponse(getState(tabId));
     return;
   }
 
-  if (msg.type === 'toggle') {
+  if (msg.type === MESSAGE_TYPES.TOGGLE) {
     const state = ensureState(tabId);
     state.enabled = !state.enabled;
 

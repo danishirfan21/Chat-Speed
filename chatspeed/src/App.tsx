@@ -3,11 +3,29 @@ import './App.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import NeoSkeuomorphicToggle from './components/reactor/neo-toggle';
 import ScanningLineAnimation from './components/reactor/scanning-line';
+import { MESSAGE_TYPES } from './lib/messages';
+
+const SUPPORTED_HOST_PATTERNS = [
+  'chatgpt.com'
+];
+
+function isSupportedUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return SUPPORTED_HOST_PATTERNS.some((pattern) => hostname.includes(pattern));
+  } catch {
+    return false;
+  }
+}
 
 const App = () => {
   const [isActive, setIsActive] = useState(false);
+  const [unsupported, setUnsupported] = useState(false);
+  const [tabId, setTabId] = useState<number | null>(null);
   const [ramSaved, setRamSaved] = useState(0);
   const [nodesPruned, setNodesPruned] = useState(0);
+
+  console.log('tabId: ', tabId);
 
   useEffect(() => {
     if (!isActive) return;
@@ -28,12 +46,41 @@ const App = () => {
   }, [isActive]);
 
   const handleToggle = (newState: boolean) => {
+    if(unsupported) {
+      return;
+    }
     setIsActive(newState);
     if (isActive) {
       setRamSaved(0);
       setNodesPruned(0);
     }
   };
+
+  useEffect(() => {
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+
+      if (!tab?.id || !tab.url || !isSupportedUrl(tab.url)) {
+        setUnsupported(true);
+        setIsActive(false);
+        setTabId(null);
+        return;
+      }
+
+      setUnsupported(false);
+      setTabId(tab.id);
+
+      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_STATE, tabId: tab.id }, (res) => {
+        if (chrome.runtime.lastError) {
+          setIsActive(false);
+          return;
+        }
+
+        setIsActive(res?.enabled ?? false);
+      });
+    });
+  }, []);
 
   return (
     <div className="w-[420px] h-[560px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
