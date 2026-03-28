@@ -1,10 +1,29 @@
 // 🔥 Step 1: Inject fetch interceptor into the PAGE CONTEXT (main world) immediately.
+
+import { MESSAGE_TYPES } from "./lib/messages";
+
 // This MUST run before ChatGPT's JS makes its first conversation API call.
 const script = document.createElement('script');
 script.src = chrome.runtime.getURL('injected.js');
 script.type = 'text/javascript';
 (document.documentElement || document.head || document.body).appendChild(script);
 script.onload = () => script.remove();
+
+let enabled = false;
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type === MESSAGE_TYPES.ENABLE) {
+    enabled = true;
+    sendResponse({ ok: true });
+    return;
+  }
+
+  if (msg.type === MESSAGE_TYPES.DISABLE) {
+    enabled = false;
+    sendResponse({ ok: true });
+    return;
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ⚡ Step 2: Auto-Trimmer

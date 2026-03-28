@@ -46,6 +46,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       state.nodesPruned = 0;
     }
 
+    const action = state.enabled
+      ? MESSAGE_TYPES.ENABLE
+      : MESSAGE_TYPES.DISABLE;
+
+    chrome.tabs.sendMessage(tabId, { type: action }, () => {
+      if (chrome.runtime.lastError) {
+        return;
+      }
+    });
+
     sendResponse(state);
     return;
   }
