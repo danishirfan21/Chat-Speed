@@ -1,10 +1,72 @@
-// 🔥 Step 1: Inject fetch interceptor into the PAGE CONTEXT (main world) immediately.
-// This MUST run before ChatGPT's JS makes its first conversation API call.
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔥 Step 1: Inject fetch interceptor into the PAGE CONTEXT (main world)
+// immediately at document_start. Starts DISABLED — controlled via toggle event.
+// ─────────────────────────────────────────────────────────────────────────────
 const script = document.createElement('script');
 script.src = chrome.runtime.getURL('injected.js');
 script.type = 'text/javascript';
 (document.documentElement || document.head || document.body).appendChild(script);
 script.onload = () => script.remove();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🧠 State
+// ─────────────────────────────────────────────────────────────────────────────
+let enabled = false;
+let nodesPruned = 0;
+let trimmerObserver: MutationObserver | null = null;
+let metricsTimer: any = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔌 Toggle bridge: content script ↔ injected.js (page world)
+// ─────────────────────────────────────────────────────────────────────────────
+function dispatchToggleEvent(on: boolean) {
+  window.dispatchEvent(new CustomEvent('chatspeed-toggle', {
+    detail: { enabled: on }
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📊 Listen for prune metrics from injected.js (debounced at 500ms)
+// ─────────────────────────────────────────────────────────────────────────────
+window.addEventListener('chatspeed-pruned', ((e: CustomEvent) => {
+  nodesPruned += e.detail.prunedCount;
+  if (metricsTimer) clearTimeout(metricsTimer);
+  metricsTimer = setTimeout(() => {
+    chrome.runtime.sendMessage({ type: 'metricsUpdate', nodesPruned });
+  }, 500);
+}) as EventListener);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📨 Message listener: enable/disable from background
+// ─────────────────────────────────────────────────────────────────────────────
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type === 'enable') {
+    enabled = true;
+    dispatchToggleEvent(true);
+    waitForMain();
+    sendResponse({ ok: true });
+  }
+  if (msg.type === 'disable') {
+    enabled = false;
+    nodesPruned = 0;
+    dispatchToggleEvent(false);
+    trimmerObserver?.disconnect();
+    trimmerObserver = null;
+    sendResponse({ ok: true });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔄 Auto re-enable on page reload (check background state)
+// ─────────────────────────────────────────────────────────────────────────────
+chrome.runtime.sendMessage({ type: 'getState' }, (res) => {
+  if (chrome.runtime.lastError) return;
+  if (res?.enabled) {
+    enabled = true;
+    dispatchToggleEvent(true);
+    waitForMain();
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ⚡ Step 2: Auto-Trimmer
@@ -106,7 +168,7 @@ function showOptimizationToast() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🧬 CORE STABLE LOGIC (Do not change)
+// 🧬 CORE STABLE LOGIC
 // ─────────────────────────────────────────────────────────────────────────────
 
 function triggerSoftReset() {
@@ -126,11 +188,13 @@ let pruneDebounceTimer: any = null;
 let isPruning = false;
 
 function schedulePrune() {
+  if (!enabled) return; // ← only prune when enabled
   if (isPruning || isTemporaryChat()) return;
   if (pruneDebounceTimer) clearTimeout(pruneDebounceTimer);
 
   pruneDebounceTimer = setTimeout(() => {
     pruneDebounceTimer = null;
+    if (!enabled) return;
     if (isStreaming()) return;
     if (getMessageCount() <= THRESHOLD) return;
 
@@ -150,10 +214,13 @@ function schedulePrune() {
 }
 
 function attachTrimmer(main: Element) {
-  const observer = new MutationObserver(() => {
-    if (getMessageCount() > THRESHOLD) schedulePrune();
+  // Disconnect previous observer if any
+  trimmerObserver?.disconnect();
+
+  trimmerObserver = new MutationObserver(() => {
+    if (enabled && getMessageCount() > THRESHOLD) schedulePrune();
   });
-  observer.observe(main, { childList: true, subtree: true });
+  trimmerObserver.observe(main, { childList: true, subtree: true });
 }
 
 function waitForMain() {
@@ -166,4 +233,5 @@ function waitForMain() {
   waitObs.observe(document.documentElement, { childList: true, subtree: true });
 }
 
-waitForMain();
+// NOTE: waitForMain() is NOT called here unconditionally anymore.
+// It's triggered by "enable" message or auto re-enable on reload.

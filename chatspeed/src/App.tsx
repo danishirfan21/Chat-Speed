@@ -1,39 +1,76 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import './App.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import NeoSkeuomorphicToggle from './components/reactor/neo-toggle';
 import ScanningLineAnimation from './components/reactor/scanning-line';
 
+const CHATGPT_PATTERNS = [
+  'chatgpt.com',
+  'openai.com',
+  'chat.jules.ai',
+];
+
+function isSupportedUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return CHATGPT_PATTERNS.some((p) => hostname.includes(p));
+  } catch {
+    return false;
+  }
+}
+
 const App = () => {
   const [isActive, setIsActive] = useState(false);
-  const [ramSaved, setRamSaved] = useState(0);
   const [nodesPruned, setNodesPruned] = useState(0);
+  const [tabId, setTabId] = useState<number | null>(null);
+  const [unsupported, setUnsupported] = useState(false);
 
+  // ── On mount: resolve active tab, validate URL, fetch state ──
   useEffect(() => {
-    if (!isActive) return;
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+      if (!tab?.id || !tab.url || !isSupportedUrl(tab.url)) {
+        setUnsupported(true);
+        return;
+      }
+      setTabId(tab.id);
+      chrome.runtime.sendMessage({ type: 'getState', tabId: tab.id }, (res) => {
+        if (chrome.runtime.lastError) return;
+        if (res) {
+          setIsActive(res.enabled ?? false);
+          setNodesPruned(res.nodesPruned ?? 0);
+        }
+      });
+    });
+  }, []);
 
-    const ramInterval = setInterval(() => {
-      setRamSaved((prev) => Math.min(prev + Math.random() * 3 + 1, 512));
-    }, 800);
+  // ── Poll for fresh metrics while active (~2s) ──
+  useEffect(() => {
+    if (!isActive || tabId === null) return;
 
-    const nodesInterval = setInterval(() => {
-      setNodesPruned((prev) => prev + Math.floor(Math.random() * 12 + 5));
-    }, 600);
+    const poll = setInterval(() => {
+      chrome.runtime.sendMessage({ type: 'getState', tabId }, (res) => {
+        if (chrome.runtime.lastError) return;
+        if (res) {
+          setNodesPruned(res.nodesPruned ?? 0);
+        }
+      });
+    }, 2000);
 
+    return () => clearInterval(poll);
+  }, [isActive, tabId]);
 
-    return () => {
-      clearInterval(ramInterval);
-      clearInterval(nodesInterval);
-    };
-  }, [isActive]);
-
-  const handleToggle = (newState: boolean) => {
-    setIsActive(newState);
-    if (isActive) {
-      setRamSaved(0);
-      setNodesPruned(0);
-    }
-  };
+  // ── Toggle handler: sends message to background ──
+  const handleToggle = useCallback(() => {
+    if (tabId === null || unsupported) return;
+    chrome.runtime.sendMessage({ type: 'toggle', tabId }, (res) => {
+      if (chrome.runtime.lastError) return;
+      if (res) {
+        setIsActive(res.enabled ?? false);
+        setNodesPruned(res.nodesPruned ?? 0);
+      }
+    });
+  }, [tabId, unsupported]);
 
   return (
     <div className="w-[420px] h-[560px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
@@ -102,7 +139,7 @@ const App = () => {
                       textShadow: isActive ? '0 0 4px rgba(0, 245, 255, 0.25)' : 'none',
                     }}
                   >
-                    {isActive ? 'ACTIVE' : 'STANDBY'}
+                    {unsupported ? 'UNSUPPORTED' : isActive ? 'ACTIVE' : 'STANDBY'}
                   </span>
                 </motion.div>
               </div>
@@ -133,7 +170,7 @@ const App = () => {
             transition={{ duration: isActive ? 2 : 4, repeat: Infinity, ease: 'easeInOut' }}
             className="absolute bottom-1.5 text-[10px] font-mono tracking-[0.18em] text-[#00F5FF]/80 uppercase pointer-events-none"
           >
-            {isActive ? 'Live Interception Active' : 'System ready to intercept'}
+            {unsupported ? 'Navigate to ChatGPT to use' : isActive ? 'Live Interception Active' : 'System ready to intercept'}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -154,7 +191,7 @@ const App = () => {
                   background: 'radial-gradient(circle, rgba(0, 245, 255, 0.25), transparent 70%)',
                 }}
               />
-              <NeoSkeuomorphicToggle isActive={isActive} onChange={handleToggle} />
+              <NeoSkeuomorphicToggle isActive={isActive} onChange={unsupported ? () => {} : handleToggle} />
 
               {/* ── Energy Continuity Beam ── */}
               <motion.div
@@ -211,13 +248,13 @@ const App = () => {
                   <div className="flex-1">
                     <p className="metric-label">RAM Saved</p>
                         <motion.p
-                          key={ramSaved}
+                          key={nodesPruned}
                           animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
                           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                           className="metric-value text-accent mt-1.5"
                           style={{ color: '#00F5FF' }}
                         >
-                          {ramSaved.toFixed(0)}
+                          {nodesPruned > 0 ? `~${Math.round(nodesPruned * 0.8)}` : '0'}
                         </motion.p>
                       </div>
                       <motion.span
@@ -274,7 +311,9 @@ const App = () => {
             >
               <div className="px-5 py-4 text-center w-full bg-white/[0.025] border border-white/[0.05] rounded-xl shadow-none">
                 <p className="text-[#00F5FF]/50 text-[11px] leading-snug tracking-wide font-medium">
-                  Enable ChatSpeed to start intercepting and pruning ChatGPT&apos;s JSON data streams in real-time.
+                  {unsupported
+                    ? 'Navigate to ChatGPT to enable ChatSpeed optimization.'
+                    : 'Enable ChatSpeed to start intercepting and pruning ChatGPT\u0027s JSON data streams in real-time.'}
                 </p>
               </div>
             </motion.div>

@@ -4,12 +4,27 @@
  * Runs in the PAGE CONTEXT (not extension isolated world).
  * Overrides window.fetch to intercept ChatGPT's conversation API
  * and trim the mapping to only the last N messages.
+ * 
+ * Starts DISABLED — controlled via 'chatspeed-toggle' CustomEvent.
  */
 (function () {
   'use strict';
 
+  // Double-injection guard
+  if (window.__CHAT_SPEED_INJECTED__) return;
+  window.__CHAT_SPEED_INJECTED__ = true;
+
   const MAX_MESSAGES = 4;
   const originalFetch = window.fetch;
+
+  // Starts disabled — content script sends toggle event to activate
+  let chatspeedEnabled = false;
+
+  window.addEventListener('chatspeed-toggle', function (e) {
+    if (chatspeedEnabled === e.detail.enabled) return; // no-op if same state
+    chatspeedEnabled = e.detail.enabled;
+    console.log('[ChatSpeed] Interception ' + (chatspeedEnabled ? 'ENABLED' : 'DISABLED'));
+  });
 
   window.fetch = async function (...args) {
     const url = (args[0]?.url || args[0])?.toString?.() || '';
@@ -22,6 +37,11 @@
       (!args[1] || !args[1].method || args[1].method === 'GET');
 
     if (!isConversationLoad) {
+      return originalFetch.apply(this, args);
+    }
+
+    // If disabled, pass through unmodified
+    if (!chatspeedEnabled) {
       return originalFetch.apply(this, args);
     }
 
@@ -43,7 +63,7 @@
       
       newMapping[rootNodeId] = { ...mapping[rootNodeId], children: [] };
 
-      // 2. Trace back the last 50 messages from the current leaf
+      // 2. Trace back the last N messages from the current leaf
       const tailNodeIds = [];
       let curr = currentNodeId;
       while (curr && mapping[curr] && tailNodeIds.length < MAX_MESSAGES) {
@@ -75,7 +95,12 @@
       }
 
       json.mapping = newMapping;
+
+      const prunedCount = Object.keys(mapping).length - Object.keys(newMapping).length;
       console.log(`[ChatSpeed] Scaled graph: ${Object.keys(mapping).length} → ${Object.keys(newMapping).length} nodes.`);
+
+      // Dispatch pruned count to content script for metrics
+      window.dispatchEvent(new CustomEvent('chatspeed-pruned', { detail: { prunedCount } }));
 
       return new Response(JSON.stringify(json), {
         status: response.status,
@@ -88,5 +113,5 @@
     }
   };
 
-  console.log('[ChatSpeed] Fetch interceptor installed.');
+  console.log('[ChatSpeed] Fetch interceptor installed (disabled by default).');
 })();

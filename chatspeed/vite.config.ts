@@ -21,10 +21,24 @@ const manifest = defineManifest({
       "128": "icon128.png",
     }
   },
+  permissions: ['activeTab'],
+  host_permissions: [
+    'https://chatgpt.com/*',
+    'https://openai.com/*',
+    'https://*.chatgpt.com/*',
+    'https://*.openai.com/*',
+    'https://chat.jules.ai/*'
+  ],
+  background: {
+    service_worker: 'src/background.ts',
+    type: 'module' as const,
+  },
   content_scripts: [
     {
       js: ['src/content.tsx'],
       matches: [
+        'https://chatgpt.com/*',
+        'https://openai.com/*',
         'https://*.chatgpt.com/*',
         'https://*.openai.com/*',
         'https://chat.jules.ai/*'
@@ -36,6 +50,8 @@ const manifest = defineManifest({
     {
       resources: ['injected.js'],
       matches: [
+        'https://chatgpt.com/*',
+        'https://openai.com/*',
         'https://*.chatgpt.com/*',
         'https://*.openai.com/*',
         'https://chat.jules.ai/*'
