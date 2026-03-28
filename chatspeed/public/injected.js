@@ -1,18 +1,38 @@
 /**
  * ChatSpeed — Main-world fetch interceptor
- * 
+ *
  * Runs in the PAGE CONTEXT (not extension isolated world).
  * Overrides window.fetch to intercept ChatGPT's conversation API
  * and trim the mapping to only the last N messages.
+ *
+ * Starts DISABLED. Controlled via `chatspeed-toggle` CustomEvent.
  */
 (function () {
-  'use strict';
+  "use strict";
+
+  // Double-injection guard
+  if (window.__CHAT_SPEED_INJECTED__) return;
+  window.__CHAT_SPEED_INJECTED__ = true;
 
   const MAX_MESSAGES = 4;
   const originalFetch = window.fetch;
 
+  let chatspeedEnabled = false;
+
+  window.addEventListener("chatspeed-toggle", function (e) {
+    const nextEnabled = !!e.detail?.enabled;
+    if (chatspeedEnabled === nextEnabled) return;
+
+    chatspeedEnabled = nextEnabled;
+  });
+
   window.fetch = async function (...args) {
-    const url = (args[0]?.url || args[0])?.toString?.() || '';
+    const url = (args[0]?.url || args[0])?.toString?.() || "";
+
+    // Disabled → pass through untouched
+    if (!chatspeedEnabled) {
+      return originalFetch.apply(this, args);
+    }
 
     // Only intercept GET requests to the conversation load endpoint
     const isConversationLoad =
@@ -39,11 +59,11 @@
 
       // 1. Identify the Root Node (the node with no parent)
       const rootNodeId = Object.keys(mapping).find(id => !mapping[id].parent);
-      if (!rootNodeId) return response; 
-      
+      if (!rootNodeId) return response;
+
       newMapping[rootNodeId] = { ...mapping[rootNodeId], children: [] };
 
-      // 2. Trace back the last 50 messages from the current leaf
+      // 2. Trace back the last N messages from the current leaf
       const tailNodeIds = [];
       let curr = currentNodeId;
       while (curr && mapping[curr] && tailNodeIds.length < MAX_MESSAGES) {

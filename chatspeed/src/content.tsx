@@ -1,6 +1,6 @@
 // 🔥 Step 1: Inject fetch interceptor into the PAGE CONTEXT (main world) immediately.
 
-import { MESSAGE_TYPES } from "./lib/messages";
+import { MESSAGE_TYPES, PAGE_EVENT_TYPES } from "./lib/messages";
 
 // This MUST run before ChatGPT's JS makes its first conversation API call.
 const script = document.createElement('script');
@@ -9,15 +9,25 @@ script.type = 'text/javascript';
 (document.documentElement || document.head || document.body).appendChild(script);
 script.onload = () => script.remove();
 
+function dispatchToggleEvent(enabled: boolean) {
+  window.dispatchEvent(
+    new CustomEvent(PAGE_EVENT_TYPES.TOGGLE, {
+      detail: { enabled },
+    })
+  );
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === MESSAGE_TYPES.ENABLE) {
     console.log("[ChatSpeed content] received ENABLE:", { enabled: true });
+    dispatchToggleEvent(true);
     sendResponse({ ok: true });
     return;
   }
 
   if (msg.type === MESSAGE_TYPES.DISABLE) {
     console.log("[ChatSpeed content] received DISABLE:", { enabled: false });
+    dispatchToggleEvent(false);
     sendResponse({ ok: true });
     return;
   }

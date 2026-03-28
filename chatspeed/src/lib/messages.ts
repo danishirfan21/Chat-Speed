@@ -4,3 +4,7 @@ export const MESSAGE_TYPES = {
     ENABLE: 'enable',
     DISABLE: 'disable',
 } as const;
+
+export const PAGE_EVENT_TYPES = {
+    TOGGLE: 'chatspeed-toggle',
+} as const;
