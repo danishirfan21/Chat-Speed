@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './App.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import NeoSkeuomorphicToggle from './components/reactor/neo-toggle';
@@ -45,16 +45,23 @@ const App = () => {
     };
   }, [isActive]);
 
-  const handleToggle = (newState: boolean) => {
-    if(unsupported) {
+  const handleToggle = useCallback(() => {
+    if (tabId === null || unsupported) {
       return;
     }
-    setIsActive(newState);
-    if (isActive) {
-      setRamSaved(0);
-      setNodesPruned(0);
-    }
-  };
+
+    chrome.runtime.sendMessage(
+      { type: MESSAGE_TYPES.TOGGLE, tabId },
+      (res) => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+
+        const enabled = res?.enabled ?? false;
+        setIsActive(enabled);
+      }
+    );
+  }, [tabId, unsupported]);
 
   useEffect(() => {
 
