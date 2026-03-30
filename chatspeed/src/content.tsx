@@ -1,6 +1,6 @@
 // 🔥 Step 1: Inject fetch interceptor into the PAGE CONTEXT (main world) immediately.
 
-import { MESSAGE_TYPES, PAGE_EVENT_TYPES } from "./lib/messages";
+import { MESSAGE_TYPES } from "./lib/messages";
 
 // This MUST run before ChatGPT's JS makes its first conversation API call.
 const script = document.createElement('script');
@@ -10,10 +10,16 @@ script.type = 'text/javascript';
 script.onload = () => script.remove();
 
 function dispatchToggleEvent(enabled: boolean) {
-  window.dispatchEvent(
-    new CustomEvent(PAGE_EVENT_TYPES.TOGGLE, {
-      detail: { enabled },
-    })
+  // 🔥 Persist state so injected.js knows BEFORE first fetch
+  localStorage.setItem("chatspeed-enabled", enabled ? "1" : "0");
+
+  window.postMessage(
+    {
+      source: "chatspeed",
+      type: "toggle",
+      enabled,
+    },
+    "*"
   );
 }
 

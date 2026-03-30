@@ -17,13 +17,24 @@
   const MAX_MESSAGES = 4;
   const originalFetch = window.fetch;
 
-  let chatspeedEnabled = false;
+  let chatspeedEnabled = localStorage.getItem("chatspeed-enabled") === "1";
 
-  window.addEventListener("chatspeed-toggle", function (e) {
-    const nextEnabled = !!e.detail?.enabled;
+  console.log("[ChatSpeed] Initial state:", chatspeedEnabled);
+
+  window.addEventListener("message", function (event) {
+    if (event.source !== window) return;
+    if (event.data?.source !== "chatspeed") return;
+    if (event.data?.type !== "toggle") return;
+
+    const nextEnabled = !!event.data.enabled;
+
     if (chatspeedEnabled === nextEnabled) return;
 
     chatspeedEnabled = nextEnabled;
+
+    console.log(
+      "[ChatSpeed] Interceptor " + (chatspeedEnabled ? "ENABLED" : "DISABLED")
+    );
   });
 
   window.fetch = async function (...args) {
@@ -108,5 +119,5 @@
     }
   };
 
-  console.log('[ChatSpeed] Fetch interceptor installed.');
+  console.log('[ChatSpeed] Fetch interceptor ready (disabled by default).');
 })();
