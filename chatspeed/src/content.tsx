@@ -9,10 +9,38 @@ script.type = 'text/javascript';
 (document.documentElement || document.head || document.body).appendChild(script);
 script.onload = () => script.remove();
 
-function dispatchToggleEvent(enabled: boolean) {
-  // 🔥 Persist state so injected.js knows BEFORE first fetch
-  localStorage.setItem("chatspeed-enabled", enabled ? "1" : "0");
+let enabled = false;
 
+const LS_KEY = '__chatspeed_enabled__';
+
+function setEnabledState(value: boolean) {
+  enabled = value;
+  // sessionStorage is synchronous, per-tab, and shared with injected.js (page world).
+  // Per-tab: enabling on Tab A won't affect Tab B.
+  // Persists across reloads within the same tab (unlike localStorage which is global).
+  try {
+    if (value) {
+      sessionStorage.setItem(LS_KEY, '1');
+    } else {
+      sessionStorage.removeItem(LS_KEY);
+    }
+  } catch (_) { /* storage blocked */ }
+}
+
+// ─── Startup State Sync ───────────────────────────────────────────────────────
+// When the page reloads the content script starts fresh (enabled = false).
+// Ask the background for the persisted tab state and re-enable if necessary.
+chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_STATE }, (response) => {
+  if (chrome.runtime.lastError) return; // tab not yet registered is fine
+  if (response?.enabled) {
+    setEnabledState(true);
+    dispatchToggleEvent(true);
+    waitForMain();
+  }
+});
+let observer: MutationObserver | null = null;
+
+function dispatchToggleEvent(enabled: boolean) {
   window.postMessage(
     {
       source: "chatspeed",
@@ -25,15 +53,30 @@ function dispatchToggleEvent(enabled: boolean) {
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === MESSAGE_TYPES.ENABLE) {
-    console.log("[ChatSpeed content] received ENABLE:", { enabled: true });
+    setEnabledState(true);
+    console.log("[ChatSpeed content] received ENABLE:", { enabled });
     dispatchToggleEvent(true);
+
+    if (!observer) {
+      waitForMain();
+    }
+
     sendResponse({ ok: true });
     return;
   }
 
   if (msg.type === MESSAGE_TYPES.DISABLE) {
-    console.log("[ChatSpeed content] received DISABLE:", { enabled: false });
+    setEnabledState(false);
+
+    console.log("[ChatSpeed content] received DISABLE:", { enabled });
+
     dispatchToggleEvent(false);
+
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+
     sendResponse({ ok: true });
     return;
   }
@@ -183,20 +226,30 @@ function schedulePrune() {
 }
 
 function attachTrimmer(main: Element) {
-  const observer = new MutationObserver(() => {
+  observer = new MutationObserver(() => {
+    if (!enabled) return; 
     if (getMessageCount() > THRESHOLD) schedulePrune();
   });
   observer.observe(main, { childList: true, subtree: true });
 }
 
 function waitForMain() {
+  if (observer) return;
+
   const main = document.querySelector('main');
-  if (main) { attachTrimmer(main); return; }
+
+  if (main) {
+    attachTrimmer(main);
+    return;
+  }
+
   const waitObs = new MutationObserver(() => {
     const m = document.querySelector('main');
-    if (m) { waitObs.disconnect(); attachTrimmer(m); }
+    if (m) {
+      waitObs.disconnect();
+      attachTrimmer(m);
+    }
   });
+
   waitObs.observe(document.documentElement, { childList: true, subtree: true });
 }
-
-waitForMain();

@@ -60,3 +60,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return;
   }
 });
+
+// ─── Re-push state after tab reload ──────────────────────────────────────────
+// When a tab finishes loading, check if it was enabled. If so, re-send ENABLE
+// to the newly injected content script (which always starts fresh at disabled).
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== 'complete') return;
+  const state = tabState[tabId];
+  if (!state?.enabled) return;
+
+  // Small delay to let the content script finish registering its listener.
+  setTimeout(() => {
+    chrome.tabs.sendMessage(tabId, { type: MESSAGE_TYPES.ENABLE }, () => {
+      if (chrome.runtime.lastError) {
+        // Content script not ready yet (non-ChatGPT page, etc.) – ignore.
+      }
+    });
+  }, 300);
+});
+
+// ─── Cleanup on tab close ────────────────────────────────────────────────────
+chrome.tabs.onRemoved.addListener((tabId) => {
+  delete tabState[tabId];
+});

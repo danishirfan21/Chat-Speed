@@ -16,10 +16,14 @@
 
   const MAX_MESSAGES = 4;
   const originalFetch = window.fetch;
+  const LS_KEY = '__chatspeed_enabled__';
 
-  let chatspeedEnabled = localStorage.getItem("chatspeed-enabled") === "1";
+  // Read synchronously from sessionStorage — this runs BEFORE ChatGPT's first
+  // conversation fetch, so the interceptor is hot from the very first request.
+  // sessionStorage is per-tab, so enabling in one tab won't affect others.
+  let chatspeedEnabled = sessionStorage.getItem(LS_KEY) === '1';
 
-  console.log("[ChatSpeed] Initial state:", chatspeedEnabled);
+  console.log("[ChatSpeed] Initial state from localStorage:", chatspeedEnabled);
 
   window.addEventListener("message", function (event) {
     if (event.source !== window) return;
