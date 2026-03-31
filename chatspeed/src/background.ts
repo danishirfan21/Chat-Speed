@@ -3,12 +3,14 @@ import { MESSAGE_TYPES } from "./lib/messages";
 type TabState = {
   enabled: boolean;
   nodesPruned: number;
+  bytesSaved: number;
 };
 
 function getDefaultState(): TabState {
   return {
     enabled: false,
     nodesPruned: 0,
+    bytesSaved: 0,
   };
 }
 
@@ -51,16 +53,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === MESSAGE_TYPES.METRICS_UPDATE) {
     (async () => {
-      console.log("[ChatSpeed bg] METRICS_UPDATE received:", msg.nodesPruned, "tabId:", tabId);
-
       const current = await getState(tabId);
 
       const next: TabState = {
         ...current,
         nodesPruned: current.nodesPruned + (msg.nodesPruned ?? 0),
+        bytesSaved: current.bytesSaved + (msg.bytesSaved ?? 0),
       };
-
-      console.log("[ChatSpeed bg] updating state:", next);
 
       await setState(tabId, next);
     })();
@@ -75,6 +74,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const next: TabState = {
         ...current,
         nodesPruned: 0,
+        bytesSaved: 0,
       };
 
       await setState(tabId, next);
@@ -90,7 +90,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const next: TabState = {
         ...current,
         enabled: !current.enabled,
-        nodesPruned: current.enabled ? 0 : current.nodesPruned,
+        nodesPruned: current.nodesPruned,
       };
 
       await setState(tabId, next);

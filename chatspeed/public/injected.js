@@ -113,12 +113,30 @@
 
       const prunedCount = Object.keys(mapping).length - Object.keys(newMapping).length;
 
+      // Estimate memory saved
+      let bytesSaved = 0;
+
+      Object.keys(mapping).forEach((id) => {
+        // skip nodes that are kept
+        if (newMapping[id]) return;
+
+        const msg = mapping[id]?.message;
+        const text = msg?.content?.parts?.join('') || '';
+
+        const textBytes = text.length * 2; // UTF-16
+        const overhead = 1024; // per node overhead
+        const isCode = text.includes('```') ? 1.5 : 1;
+
+        bytesSaved += (textBytes + overhead) * isCode;
+      });
+
       if (prunedCount > 0) {
         window.postMessage(
           {
             source: "chatspeed",
             type: "pruned",
             count: prunedCount,
+            bytesSaved,
           },
           "*"
         );

@@ -115,6 +115,7 @@ window.addEventListener("message", (event) => {
   if (event.data?.type !== "pruned") return;
 
   const count = event.data.count ?? 0;
+  const bytesSaved = event.data.bytesSaved ?? 0;
 
   console.log("[ChatSpeed content] pruned event received:", count, { enabled });
 
@@ -128,6 +129,7 @@ window.addEventListener("message", (event) => {
       type: MESSAGE_TYPES.METRICS_UPDATE,
       tabId: currentTabId,
       nodesPruned: count,
+      bytesSaved
     });
   }
 });

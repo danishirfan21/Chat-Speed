@@ -20,27 +20,8 @@ const App = () => {
   const [isActive, setIsActive] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
   const [tabId, setTabId] = useState<number | null>(null);
-  const [ramSaved, setRamSaved] = useState(0);
+  const [ramSaved, setRamSaved] = useState<string>("..."); 
   const [nodesPruned, setNodesPruned] = useState(0);
-
-  console.log('====nodesPruned in App.tsx', nodesPruned)
-
-  useEffect(() => {
-    if (!isActive) {
-      setRamSaved(0);
-      setNodesPruned(0);
-      return;
-    }
-
-    const ramInterval = setInterval(() => {
-      setRamSaved((prev) => Math.min(prev + Math.random() * 3 + 1, 512));
-    }, 800);
-
-
-    return () => {
-      clearInterval(ramInterval);
-    };
-  }, [isActive]);
 
   // ─── Detect active tab ─────────────────────────────────────
   useEffect(() => {
@@ -100,10 +81,16 @@ const App = () => {
           if (chrome.runtime.lastError) return;
 
           const value = res?.nodesPruned ?? 0;
+          const mb = (res?.bytesSaved ?? 0) / (1024 * 1024);
+          const display =
+            mb < 1
+              ? (mb * 1024).toFixed(0) + " KB"
+              : Math.round(mb) + " MB";
 
           console.log("[ChatSpeed popup] fetched nodesPruned:", value);
 
           setNodesPruned(value);
+          setRamSaved(display);
         }
       );
     };
@@ -297,7 +284,7 @@ const App = () => {
                           className="metric-value text-accent mt-1.5"
                           style={{ color: '#00F5FF' }}
                         >
-                          {ramSaved.toFixed(0)}
+                          ~{ramSaved}
                         </motion.p>
                       </div>
                       <motion.span
