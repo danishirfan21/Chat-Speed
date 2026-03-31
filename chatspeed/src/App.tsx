@@ -5,9 +5,7 @@ import NeoSkeuomorphicToggle from './components/reactor/neo-toggle';
 import ScanningLineAnimation from './components/reactor/scanning-line';
 import { MESSAGE_TYPES } from './lib/messages';
 
-const SUPPORTED_HOST_PATTERNS = [
-  'chatgpt.com'
-];
+const SUPPORTED_HOST_PATTERNS = ['chatgpt.com'];
 
 function isSupportedUrl(url: string): boolean {
   try {
@@ -25,10 +23,12 @@ const App = () => {
   const [ramSaved, setRamSaved] = useState(0);
   const [nodesPruned, setNodesPruned] = useState(0);
 
-  console.log('tabId: ', tabId);
-
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      setRamSaved(0);
+      setNodesPruned(0);
+      return;
+    }
 
     const ramInterval = setInterval(() => {
       setRamSaved((prev) => Math.min(prev + Math.random() * 3 + 1, 512));
@@ -45,26 +45,8 @@ const App = () => {
     };
   }, [isActive]);
 
-  const handleToggle = useCallback(() => {
-    if (tabId === null || unsupported) {
-      return;
-    }
-
-    chrome.runtime.sendMessage(
-      { type: MESSAGE_TYPES.TOGGLE, tabId },
-      (res) => {
-        if (chrome.runtime.lastError) {
-          return;
-        }
-
-        const enabled = res?.enabled ?? false;
-        setIsActive(enabled);
-      }
-    );
-  }, [tabId, unsupported]);
-
+  // ─── Detect active tab ─────────────────────────────────────
   useEffect(() => {
-
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
 
@@ -77,17 +59,39 @@ const App = () => {
 
       setUnsupported(false);
       setTabId(tab.id);
+    });
+  }, []);
 
-      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_STATE, tabId: tab.id }, (res) => {
+  // ─── Fetch state from background (single truth) ─────────────
+  useEffect(() => {
+    if (tabId === null || unsupported) return;
+
+    chrome.runtime.sendMessage(
+      { type: MESSAGE_TYPES.GET_STATE, tabId },
+      (res) => {
         if (chrome.runtime.lastError) {
           setIsActive(false);
           return;
         }
 
         setIsActive(res?.enabled ?? false);
-      });
-    });
-  }, []);
+      }
+    );
+  }, [tabId, unsupported]);
+
+  // ─── Toggle handler ────────────────────────────────────────
+  const handleToggle = useCallback(() => {
+    if (tabId === null || unsupported) return;
+
+    chrome.runtime.sendMessage(
+      { type: MESSAGE_TYPES.TOGGLE, tabId },
+      (res) => {
+        if (chrome.runtime.lastError) return;
+
+        setIsActive(res?.enabled ?? false);
+      }
+    );
+  }, [tabId, unsupported]);
 
   return (
     <div className="w-[420px] h-[560px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">

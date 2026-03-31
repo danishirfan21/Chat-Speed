@@ -21,7 +21,7 @@ const manifest = defineManifest({
       "128": "icon128.png",
     }
   },
-  permissions: ['activeTab'],
+  permissions: ['activeTab', 'storage'],
   background: {
     service_worker: 'src/background.ts',
     type: 'module' as const,

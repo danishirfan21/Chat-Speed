@@ -18,13 +18,12 @@
   const originalFetch = window.fetch;
   const LS_KEY = '__chatspeed_enabled__';
 
-  // Read synchronously from sessionStorage — this runs BEFORE ChatGPT's first
-  // conversation fetch, so the interceptor is hot from the very first request.
-  // sessionStorage is per-tab, so enabling in one tab won't affect others.
+  // BOOTSTRAP ONLY (runs once)
   let chatspeedEnabled = sessionStorage.getItem(LS_KEY) === '1';
 
-  console.log("[ChatSpeed] Initial state from localStorage:", chatspeedEnabled);
+  console.log("[ChatSpeed] Initial state from sessionStorage:", chatspeedEnabled);
 
+  // RUNTIME SOURCE OF TRUTH
   window.addEventListener("message", function (event) {
     if (event.source !== window) return;
     if (event.data?.source !== "chatspeed") return;
@@ -44,7 +43,7 @@
   window.fetch = async function (...args) {
     const url = (args[0]?.url || args[0])?.toString?.() || "";
 
-    // Disabled → pass through untouched
+    // TRUST ONLY MEMORY FLAG
     if (!chatspeedEnabled) {
       return originalFetch.apply(this, args);
     }
@@ -123,5 +122,5 @@
     }
   };
 
-  console.log('[ChatSpeed] Fetch interceptor ready (disabled by default).');
+  console.log('[ChatSpeed] Fetch interceptor ready.');
 })();

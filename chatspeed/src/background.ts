@@ -5,8 +5,6 @@ type TabState = {
   nodesPruned: number;
 };
 
-const tabState: Record<number, TabState> = {};
-
 function getDefaultState(): TabState {
   return {
     enabled: false,
@@ -14,15 +12,23 @@ function getDefaultState(): TabState {
   };
 }
 
-function getState(tabId: number): TabState {
-  return tabState[tabId] ?? getDefaultState();
+function getStorageKey(tabId: number) {
+  return `tab:${tabId}`;
 }
 
-function ensureState(tabId: number): TabState {
-  if (!tabState[tabId]) {
-    tabState[tabId] = getDefaultState();
-  }
-  return tabState[tabId];
+async function getState(tabId: number): Promise<TabState> {
+  const key = getStorageKey(tabId);
+  const result = await chrome.storage.session.get(key) as Record<string, TabState | undefined>;
+  return result[key] ?? getDefaultState();
+}
+
+async function setState(tabId: number, state: TabState): Promise<void> {
+  const key = getStorageKey(tabId);
+  await chrome.storage.session.set({ [key]: state });
+}
+
+async function clearState(tabId: number): Promise<void> {
+  await chrome.storage.session.remove(getStorageKey(tabId));
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -34,30 +40,36 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === MESSAGE_TYPES.GET_STATE) {
-    sendResponse(getState(tabId));
-    return;
+    getState(tabId).then(sendResponse);
+    return true;
   }
 
   if (msg.type === MESSAGE_TYPES.TOGGLE) {
-    const state = ensureState(tabId);
-    state.enabled = !state.enabled;
+    (async () => {
+      const current = await getState(tabId);
 
-    if (!state.enabled) {
-      state.nodesPruned = 0;
-    }
+      const next: TabState = {
+        ...current,
+        enabled: !current.enabled,
+        nodesPruned: !current.enabled ? current.nodesPruned : 0,
+      };
 
-    const action = state.enabled
-      ? MESSAGE_TYPES.ENABLE
-      : MESSAGE_TYPES.DISABLE;
+      await setState(tabId, next);
 
-    chrome.tabs.sendMessage(tabId, { type: action }, () => {
-      if (chrome.runtime.lastError) {
-        return;
-      }
-    });
+      const action = next.enabled
+        ? MESSAGE_TYPES.ENABLE
+        : MESSAGE_TYPES.DISABLE;
 
-    sendResponse(state);
-    return;
+      chrome.tabs.sendMessage(tabId, { type: action }, () => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+      });
+
+      sendResponse(next);
+    })();
+
+    return true;
   }
 });
 
@@ -65,15 +77,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // When a tab finishes loading, check if it was enabled. If so, re-send ENABLE
 // to the newly injected content script (which always starts fresh at disabled).
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status !== 'complete') return;
-  const state = tabState[tabId];
-  if (!state?.enabled) return;
+  if (changeInfo.status !== "complete") return;
 
-  // Small delay to let the content script finish registering its listener.
-  setTimeout(() => {
+  setTimeout(async () => {
+    const state = await getState(tabId);
+    if (!state.enabled) return;
+
     chrome.tabs.sendMessage(tabId, { type: MESSAGE_TYPES.ENABLE }, () => {
       if (chrome.runtime.lastError) {
-        // Content script not ready yet (non-ChatGPT page, etc.) – ignore.
+        // Ignore unsupported pages / listener not ready yet
       }
     });
   }, 300);
@@ -81,5 +93,5 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 // ─── Cleanup on tab close ────────────────────────────────────────────────────
 chrome.tabs.onRemoved.addListener((tabId) => {
-  delete tabState[tabId];
+  clearState(tabId);
 });
