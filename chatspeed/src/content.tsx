@@ -72,6 +72,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     dispatchToggleEvent(false);
 
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.METRICS_RESET,
+    });
+
     if (observer) {
       observer.disconnect();
       observer = null;
@@ -80,6 +84,21 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     sendResponse({ ok: true });
     return;
   }
+});
+
+window.addEventListener("message", (event) => {
+  if (event.source !== window) return;
+  if (event.data?.source !== "chatspeed") return;
+  if (event.data?.type !== "pruned") return;
+
+  const count = event.data.count ?? 0;
+
+  if (!enabled) return;
+
+  chrome.runtime.sendMessage({
+    type: MESSAGE_TYPES.METRICS_UPDATE,
+    nodesPruned: count,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -111,6 +111,19 @@
       json.mapping = newMapping;
       console.log(`[ChatSpeed] Scaled graph: ${Object.keys(mapping).length} → ${Object.keys(newMapping).length} nodes.`);
 
+      const prunedCount = Object.keys(mapping).length - Object.keys(newMapping).length;
+
+      if (prunedCount > 0) {
+        window.postMessage(
+          {
+            source: "chatspeed",
+            type: "pruned",
+            count: prunedCount,
+          },
+          "*"
+        );
+      }
+
       return new Response(JSON.stringify(json), {
         status: response.status,
         statusText: response.statusText,

@@ -34,14 +34,9 @@ const App = () => {
       setRamSaved((prev) => Math.min(prev + Math.random() * 3 + 1, 512));
     }, 800);
 
-    const nodesInterval = setInterval(() => {
-      setNodesPruned((prev) => prev + Math.floor(Math.random() * 12 + 5));
-    }, 600);
-
 
     return () => {
       clearInterval(ramInterval);
-      clearInterval(nodesInterval);
     };
   }, [isActive]);
 
@@ -92,6 +87,23 @@ const App = () => {
       }
     );
   }, [tabId, unsupported]);
+
+  useEffect(() => {
+    if (!isActive || tabId === null) return;
+
+    const interval = setInterval(() => {
+      chrome.runtime.sendMessage(
+        { type: MESSAGE_TYPES.GET_STATE, tabId },
+        (res) => {
+          if (chrome.runtime.lastError) return;
+
+          setNodesPruned(res?.nodesPruned ?? 0);
+        }
+      );
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isActive, tabId]);
 
   return (
     <div className="w-[420px] h-[560px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">

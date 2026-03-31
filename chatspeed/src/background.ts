@@ -44,6 +44,36 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === MESSAGE_TYPES.METRICS_UPDATE) {
+    (async () => {
+      const current = await getState(tabId);
+
+      const next: TabState = {
+        ...current,
+        nodesPruned: current.nodesPruned + (msg.nodesPruned ?? 0),
+      };
+
+      await setState(tabId, next);
+    })();
+
+    return;
+  }
+
+  if (msg.type === MESSAGE_TYPES.METRICS_RESET) {
+    (async () => {
+      const current = await getState(tabId);
+
+      const next: TabState = {
+        ...current,
+        nodesPruned: 0,
+      };
+
+      await setState(tabId, next);
+    })();
+
+    return;
+  }
+
   if (msg.type === MESSAGE_TYPES.TOGGLE) {
     (async () => {
       const current = await getState(tabId);
@@ -51,7 +81,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const next: TabState = {
         ...current,
         enabled: !current.enabled,
-        nodesPruned: !current.enabled ? current.nodesPruned : 0,
+        nodesPruned: current.enabled ? 0 : current.nodesPruned,
       };
 
       await setState(tabId, next);
