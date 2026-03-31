@@ -169,7 +169,7 @@ const App = () => {
                       textShadow: isActive ? '0 0 4px rgba(0, 245, 255, 0.25)' : 'none',
                     }}
                   >
-                    {isActive ? 'ACTIVE' : 'STANDBY'}
+                    {unsupported ? 'UNSUPPORTED' : isActive ? 'ACTIVE' : 'STANDBY'}
                   </span>
                 </motion.div>
               </div>
@@ -200,7 +200,7 @@ const App = () => {
             transition={{ duration: isActive ? 2 : 4, repeat: Infinity, ease: 'easeInOut' }}
             className="absolute bottom-1.5 text-[10px] font-mono tracking-[0.18em] text-[#00F5FF]/80 uppercase pointer-events-none"
           >
-            {isActive ? 'Live Interception Active' : 'System ready to intercept'}
+            {unsupported ? 'No Active Target Detected' : isActive ? 'LIVE STREAM INTERCEPTION ENGAGED' : 'System ready to intercept'}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -284,7 +284,7 @@ const App = () => {
                           className="metric-value text-accent mt-1.5"
                           style={{ color: '#00F5FF' }}
                         >
-                          ~{ramSaved}
+                          {ramSaved === "..." ? ramSaved : `~${ramSaved}`}
                         </motion.p>
                       </div>
                       <motion.span
@@ -341,7 +341,9 @@ const App = () => {
             >
               <div className="px-5 py-4 text-center w-full bg-white/[0.025] border border-white/[0.05] rounded-xl shadow-none">
                 <p className="text-[#00F5FF]/50 text-[11px] leading-snug tracking-wide font-medium">
-                  Enable ChatSpeed to start intercepting and pruning ChatGPT&apos;s JSON data streams in real-time.
+                  {unsupported
+                    ? 'Open ChatGPT to ENABLE optimization'
+                    : 'Enable ChatSpeed to initiate REAL-TIME optimization'}
                 </p>
               </div>
             </motion.div>
@@ -359,7 +361,7 @@ const App = () => {
             rel="noopener noreferrer"
             className={`hud-link ${isActive ? 'hud-link-active' : 'hud-link-standby'}`}
           >
-            {isActive ? '< LIVE TRACE AVAILABLE />' : '< SOURCE AVAILABLE />'}
+            {isActive ? '< TRACE ACTIVE />' : '< SOURCE AVAILABLE />'}
           </motion.a>
         </div>
       </div>
