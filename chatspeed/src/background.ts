@@ -30,28 +30,37 @@ async function setState(tabId: number, state: TabState): Promise<void> {
 async function clearState(tabId: number): Promise<void> {
   await chrome.storage.session.remove(getStorageKey(tabId));
 }
-
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const tabId: number | undefined = msg.tabId ?? sender.tab?.id;
 
   if (!tabId) {
+    console.warn("[ChatSpeed bg] No tabId found for message:", msg.type, "sender:", sender);
     sendResponse({ error: 'no tabId' });
     return;
   }
 
+  if (msg.type === 'GET_TAB_ID') {
+    sendResponse({ tabId });
+    return;
+  }
+
   if (msg.type === MESSAGE_TYPES.GET_STATE) {
-    getState(tabId).then(sendResponse);
+    getState(tabId).then(state => sendResponse({ ...state, tabId }));
     return true;
   }
 
   if (msg.type === MESSAGE_TYPES.METRICS_UPDATE) {
     (async () => {
+      console.log("[ChatSpeed bg] METRICS_UPDATE received:", msg.nodesPruned, "tabId:", tabId);
+
       const current = await getState(tabId);
 
       const next: TabState = {
         ...current,
         nodesPruned: current.nodesPruned + (msg.nodesPruned ?? 0),
       };
+
+      console.log("[ChatSpeed bg] updating state:", next);
 
       await setState(tabId, next);
     })();
@@ -90,13 +99,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         ? MESSAGE_TYPES.ENABLE
         : MESSAGE_TYPES.DISABLE;
 
-      chrome.tabs.sendMessage(tabId, { type: action }, () => {
+      chrome.tabs.sendMessage(tabId, { type: action, tabId }, () => {
         if (chrome.runtime.lastError) {
           return;
         }
       });
 
-      sendResponse(next);
+      sendResponse({ ...next, tabId });
     })();
 
     return true;
@@ -113,7 +122,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     const state = await getState(tabId);
     if (!state.enabled) return;
 
-    chrome.tabs.sendMessage(tabId, { type: MESSAGE_TYPES.ENABLE }, () => {
+    chrome.tabs.sendMessage(tabId, { type: MESSAGE_TYPES.ENABLE, tabId }, () => {
       if (chrome.runtime.lastError) {
         // Ignore unsupported pages / listener not ready yet
       }

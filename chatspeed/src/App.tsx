@@ -23,6 +23,8 @@ const App = () => {
   const [ramSaved, setRamSaved] = useState(0);
   const [nodesPruned, setNodesPruned] = useState(0);
 
+  console.log('====nodesPruned in App.tsx', nodesPruned)
+
   useEffect(() => {
     if (!isActive) {
       setRamSaved(0);
@@ -91,16 +93,24 @@ const App = () => {
   useEffect(() => {
     if (!isActive || tabId === null) return;
 
-    const interval = setInterval(() => {
+    const fetchState = () => {
       chrome.runtime.sendMessage(
         { type: MESSAGE_TYPES.GET_STATE, tabId },
         (res) => {
           if (chrome.runtime.lastError) return;
 
-          setNodesPruned(res?.nodesPruned ?? 0);
+          const value = res?.nodesPruned ?? 0;
+
+          console.log("[ChatSpeed popup] fetched nodesPruned:", value);
+
+          setNodesPruned(value);
         }
       );
-    }, 2000);
+    };
+
+    fetchState(); // immediate sync
+
+    const interval = setInterval(fetchState, 1000); // faster feedback
 
     return () => clearInterval(interval);
   }, [isActive, tabId]);

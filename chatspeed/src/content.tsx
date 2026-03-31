@@ -10,7 +10,7 @@ script.type = 'text/javascript';
 script.onload = () => script.remove();
 
 let enabled = false;
-
+let currentTabId: number | null = null;
 const LS_KEY = '__chatspeed_enabled__';
 
 function setEnabledState(value: boolean) {
@@ -31,13 +31,29 @@ function setEnabledState(value: boolean) {
 // When the page reloads the content script starts fresh (enabled = false).
 // Ask the background for the persisted tab state and re-enable if necessary.
 chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_STATE }, (response) => {
-  if (chrome.runtime.lastError) return; // tab not yet registered is fine
+  if (chrome.runtime.lastError) return;
+  
+  if (response?.tabId) {
+    currentTabId = response.tabId;
+    console.log("[ChatSpeed content] initial tabId set:", currentTabId);
+  }
+
   if (response?.enabled) {
     setEnabledState(true);
     dispatchToggleEvent(true);
     waitForMain();
   }
 });
+
+// Fallback to absolute tabId identification
+if (currentTabId === null) {
+  chrome.runtime.sendMessage({ type: "GET_TAB_ID" }, (res) => {
+    if (res?.tabId) {
+      currentTabId = res.tabId;
+      console.log("[ChatSpeed content] fallback tabId set:", currentTabId);
+    }
+  });
+}
 let observer: MutationObserver | null = null;
 
 function dispatchToggleEvent(enabled: boolean) {
@@ -52,6 +68,10 @@ function dispatchToggleEvent(enabled: boolean) {
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.tabId) {
+    currentTabId = msg.tabId;
+  }
+
   if (msg.type === MESSAGE_TYPES.ENABLE) {
     setEnabledState(true);
     console.log("[ChatSpeed content] received ENABLE:", { enabled });
@@ -72,9 +92,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     dispatchToggleEvent(false);
 
-    chrome.runtime.sendMessage({
-      type: MESSAGE_TYPES.METRICS_RESET,
-    });
+    if (currentTabId !== null) {
+      chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.METRICS_RESET,
+        tabId: currentTabId,
+      });
+    }
 
     if (observer) {
       observer.disconnect();
@@ -93,12 +116,20 @@ window.addEventListener("message", (event) => {
 
   const count = event.data.count ?? 0;
 
-  if (!enabled) return;
+  console.log("[ChatSpeed content] pruned event received:", count, { enabled });
 
-  chrome.runtime.sendMessage({
-    type: MESSAGE_TYPES.METRICS_UPDATE,
-    nodesPruned: count,
-  });
+  // Allow first prune event even if enable hasn't synced yet
+  if (!enabled) {
+    console.log("[ChatSpeed content] accepting early prune before enable sync");
+  }
+
+  if (currentTabId !== null) {
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.METRICS_UPDATE,
+      tabId: currentTabId,
+      nodesPruned: count,
+    });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
