@@ -29,22 +29,14 @@ const manifest = defineManifest({
   content_scripts: [
     {
       js: ['src/content.tsx'],
-      matches: [
-        'https://*.chatgpt.com/*',
-        'https://*.openai.com/*',
-        'https://chat.jules.ai/*'
-      ],
+      matches: ['https://chatgpt.com/*'],
       run_at: 'document_start',
     },
   ],
   web_accessible_resources: [
     {
       resources: ['injected.js'],
-      matches: [
-        'https://*.chatgpt.com/*',
-        'https://*.openai.com/*',
-        'https://chat.jules.ai/*'
-      ],
+      matches: ['https://chatgpt.com/*'],
     },
   ],
 })
