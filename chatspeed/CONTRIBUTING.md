@@ -29,10 +29,11 @@ To maintain the high-performance standards and "Surgical" reliability of ChatSpe
    ```bash
    npm install
    ```
-4. **Build** in watch mode:
+4. **Build the extension**
    ```bash
-   npm run dev
+   npm run build
    ```
+
 5. **Load** in Chrome:
    - Go to `chrome://extensions`
    - Enable **Developer Mode**
