@@ -151,23 +151,29 @@ function showOptimizationToast() {
   let toast = document.getElementById('chatspeed-toast');
   if (toast) return;
 
-  // 1. Inject High-End Animation Styles
+  // 1. Inject ChatSpeed Themed Animation Styles
   if (!document.getElementById('chatspeed-toast-styles')) {
     const style = document.createElement('style');
     style.id = 'chatspeed-toast-styles';
     style.textContent = `
-      @keyframes chatspeed-slide-in {
-        from { transform: translateX(120%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-      @keyframes chatspeed-progress-bar {
+      @keyframes chatspeed-entry {
         from { 
-          width: 100%;
-          box-shadow: 0 0 16px rgba(0, 245, 255, 0.8);
+          transform: translateY(-10px) translateX(120%);
+          opacity: 0;
         }
         to { 
-          width: 0%;
-          box-shadow: 0 0 6px rgba(0, 245, 255, 0.2);
+          transform: translateY(0) translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes chatspeed-exit {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(-5px);
+          opacity: 0;
         }
       }
       @keyframes chatspeed-glow-pulse {
@@ -175,7 +181,34 @@ function showOptimizationToast() {
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 245, 255, 0.2);
         }
         50% {
-          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 245, 255, 0.35);
+          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 28px rgba(0, 245, 255, 0.45);
+        }
+      }
+      @keyframes chatspeed-icon-spark {
+        0% {
+          color: #00F5FF;
+          filter: drop-shadow(0 0 4px rgba(0, 245, 255, 0.3));
+        }
+        40% {
+          color: #00F5FF;
+          filter: drop-shadow(0 0 12px rgba(0, 245, 255, 0.8));
+        }
+        100% {
+          color: #00F5FF;
+          filter: drop-shadow(0 0 4px rgba(0, 245, 255, 0.3));
+        }
+      }
+      @keyframes chatspeed-progress-ease {
+        0% {
+          width: 100%;
+          box-shadow: 0 0 20px rgba(0, 245, 255, 0.9);
+        }
+        50% {
+          box-shadow: 0 0 16px rgba(0, 245, 255, 0.6);
+        }
+        100% {
+          width: 0%;
+          box-shadow: 0 0 6px rgba(0, 245, 255, 0.2);
         }
       }
       @font-face {
@@ -186,7 +219,7 @@ function showOptimizationToast() {
     document.head.appendChild(style);
   }
 
-  // 2. Create the Glassmorphism Container
+  // 2. Create the Glassmorphism Container with ChatSpeed Theme
   toast = document.createElement('div');
   toast.id = 'chatspeed-toast';
   Object.assign(toast.style, {
@@ -207,7 +240,7 @@ function showOptimizationToast() {
     fontFamily: 'Geist, system-ui, -apple-system, sans-serif',
     zIndex: '2147483647',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 245, 255, 0.2), inset 0 1px 2px rgba(0, 245, 255, 0.1)',
-    animation: 'chatspeed-slide-in 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards, chatspeed-glow-pulse 2s ease-in-out infinite 0.5s',
+    animation: 'chatspeed-entry 0.25s ease-out forwards, chatspeed-glow-pulse 1s ease-in-out infinite 0.25s',
     overflow: 'hidden',
     minWidth: '260px',
     pointerEvents: 'none',
@@ -224,7 +257,20 @@ function showOptimizationToast() {
 
   // Status text with cyan color
   const text = document.createElement('span');
-  text.innerHTML = '<span style="color: #00F5FF; margin-right: 4px; font-size: 14px;">⚡</span><span style="color: #E8F0FF;">INTERCEPTING STREAM</span>';
+  const iconSpan = document.createElement('span');
+  iconSpan.textContent = '⚡';
+  iconSpan.style.color = '#00F5FF';
+  iconSpan.style.marginRight = '4px';
+  iconSpan.style.fontSize = '14px';
+  iconSpan.style.animation = 'chatspeed-icon-spark 0.6s ease-out';
+  iconSpan.style.display = 'inline-block';
+  
+  const textSpan = document.createElement('span');
+  textSpan.textContent = 'Network Optimization';
+  textSpan.style.color = '#E8F0FF';
+  
+  text.appendChild(iconSpan);
+  text.appendChild(textSpan);
   Object.assign(text.style, {
     fontSize: '13px',
     color: '#E8F0FF',
@@ -252,7 +298,7 @@ function showOptimizationToast() {
     height: '100%',
     background: 'linear-gradient(90deg, transparent, #00F5FF, transparent)',
     backgroundSize: '200% 100%',
-    animation: 'chatspeed-progress-bar 3s linear forwards',
+    animation: 'chatspeed-progress-ease 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
     boxShadow: '0 0 16px rgba(0, 245, 255, 0.8)',
   });
 
@@ -260,13 +306,11 @@ function showOptimizationToast() {
   toast.appendChild(progressTrack);
   document.body.appendChild(toast);
 
-  // 4. Smooth Fade Out with glow fade
+  // 4. Smooth Exit with animation
   setTimeout(() => {
     if (toast) {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.4s ease, box-shadow 0.4s ease';
-      toast.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 8px rgba(0, 245, 255, 0.05)';
-      setTimeout(() => toast?.remove(), 400);
+      toast.style.animation = 'chatspeed-exit 0.2s ease-out forwards';
+      setTimeout(() => toast?.remove(), 200);
     }
   }, 3000);
 }
@@ -311,7 +355,7 @@ function schedulePrune() {
         window.location.reload();
       }
       isPruning = false;
-    }, 1200);
+    }, 2500);
   }, 1000);
 }
 
