@@ -161,12 +161,26 @@ function showOptimizationToast() {
         to { transform: translateX(0); opacity: 1; }
       }
       @keyframes chatspeed-progress-bar {
-        from { width: 100%; }
-        to { width: 0%; }
+        from { 
+          width: 100%;
+          box-shadow: 0 0 16px rgba(0, 245, 255, 0.8);
+        }
+        to { 
+          width: 0%;
+          box-shadow: 0 0 6px rgba(0, 245, 255, 0.2);
+        }
+      }
+      @keyframes chatspeed-glow-pulse {
+        0%, 100% {
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 245, 255, 0.2);
+        }
+        50% {
+          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 245, 255, 0.35);
+        }
       }
       @font-face {
-        font-family: 'Inter';
-        src: local('Inter'), local('sans-serif');
+        font-family: 'Geist';
+        src: local('Geist'), local('-apple-system'), local('system-ui'), local('sans-serif');
       }
     `;
     document.head.appendChild(style);
@@ -179,55 +193,79 @@ function showOptimizationToast() {
     position: 'fixed',
     top: '20px',
     right: '20px',
-    background: 'rgba(23, 23, 23, 0.75)',
+    // Deep Space Blue background with cyan glow
+    background: 'rgba(5, 8, 10, 0.85)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
-    color: '#fff',
-    padding: '16px 24px',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    fontSize: '14px',
+    color: '#E8F0FF',
+    padding: '14px 20px',
+    borderRadius: '10px',
+    // Cyan accent border with glow
+    border: '1px solid rgba(0, 245, 255, 0.2)',
+    fontSize: '13px',
     fontWeight: '500',
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-    zIndex: '2147483647', // Max possible z-index
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-    animation: 'chatspeed-slide-in 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards',
+    fontFamily: 'Geist, system-ui, -apple-system, sans-serif',
+    zIndex: '2147483647',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 245, 255, 0.2), inset 0 1px 2px rgba(0, 245, 255, 0.1)',
+    animation: 'chatspeed-slide-in 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards, chatspeed-glow-pulse 2s ease-in-out infinite 0.5s',
     overflow: 'hidden',
-    minWidth: '240px',
-    pointerEvents: 'none'
+    minWidth: '260px',
+    pointerEvents: 'none',
+    letterSpacing: '0.3px',
   });
 
-  const text = document.createElement('div');
-  text.innerHTML = '<span style="color: #FFD700; margin-right: 8px;">⚡</span> Speed Mode: Optimizing...';
-  toast.appendChild(text);
+  // Content wrapper
+  const textWrapper = document.createElement('div');
+  Object.assign(textWrapper.style, {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  });
 
-  // 3. The Countdown Progress Bar
+  // Status text with cyan color
+  const text = document.createElement('span');
+  text.innerHTML = '<span style="color: #00F5FF; margin-right: 4px; font-size: 14px;">⚡</span><span style="color: #E8F0FF;">INTERCEPTING STREAM</span>';
+  Object.assign(text.style, {
+    fontSize: '13px',
+    color: '#E8F0FF',
+    fontWeight: '500',
+    letterSpacing: '0.2px',
+  });
+
+  textWrapper.appendChild(text);
+  toast.appendChild(textWrapper);
+
+  // 3. The Countdown Progress Bar with Cyan Glow
   const progressTrack = document.createElement('div');
   Object.assign(progressTrack.style, {
     position: 'absolute',
     bottom: '0',
     left: '0',
     width: '100%',
-    height: '3px',
-    background: 'rgba(255, 255, 255, 0.05)',
+    height: '2px',
+    background: 'rgba(0, 245, 255, 0.08)',
+    overflow: 'hidden',
   });
 
   const progressBar = document.createElement('div');
   Object.assign(progressBar.style, {
     height: '100%',
-    background: 'rgba(255, 255, 255, 0.5)',
+    background: 'linear-gradient(90deg, transparent, #00F5FF, transparent)',
+    backgroundSize: '200% 100%',
     animation: 'chatspeed-progress-bar 3s linear forwards',
+    boxShadow: '0 0 16px rgba(0, 245, 255, 0.8)',
   });
 
   progressTrack.appendChild(progressBar);
   toast.appendChild(progressTrack);
   document.body.appendChild(toast);
 
-  // 4. Smooth Fade Out
+  // 4. Smooth Fade Out with glow fade
   setTimeout(() => {
     if (toast) {
       toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.4s ease';
+      toast.style.transition = 'opacity 0.4s ease, box-shadow 0.4s ease';
+      toast.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 8px rgba(0, 245, 255, 0.05)';
       setTimeout(() => toast?.remove(), 400);
     }
   }, 3000);
