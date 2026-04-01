@@ -1,19 +1,23 @@
 ## ⚡ ChatSpeed — Eliminate ChatGPT Lag Instantly
 
-Surgical Network Graft for Real-Time Performance
+Surgical Network Graft for Real-Time Chat Performance
 
 ChatSpeed is a high-performance Chrome extension that eliminates ChatGPT lag in long conversations.
 
-It works by intercepting and optimizing ChatGPT’s internal JSON data stream in real-time — pruning unnecessary conversation nodes before they ever reach the React renderer.
+It works by intercepting and optimizing ChatGPT’s internal JSON data stream in real time. It prunes unnecessary conversation nodes before they ever reach the React renderer.
 
-The result: instant typing, smooth scrolling, and zero slowdown — no matter how long your chat gets.
+The result is instant typing, smooth scrolling, and zero slowdown no matter how long your chat gets.
 
 No refresh. No hacks. No UI tricks. Just real performance.
 
-## 🚀 The Problem: The "Long Chat" Bottleneck
+Designed for developers, power users, and anyone tired of ChatGPT slowing down.
 
-After ~30–50 messages, ChatGPT starts to slow down.
-After ~200+, it becomes noticeably laggy.
+---
+
+## 🚀 The Problem The "Long Chat" Bottleneck
+
+After around 30 to 50 messages, ChatGPT starts to slow down.  
+After 200 or more, it becomes noticeably laggy.
 
 This happens because the browser accumulates a massive hidden conversation graph, leading to:
 
@@ -50,6 +54,11 @@ ChatSpeed prevents the slowdown before it even happens.
 | Memory Relieved | 0 MB | ~3–10 MB (Estimated) | Significant Relief |
 
 
+## 🖥️ Demo
+
+*(Coming soon — before/after performance comparison)*
+
+
 ## 🖥️ Dashboard Interface
 
 The ChatSpeed HUD provides a systems-level view of optimization in real time.
@@ -59,6 +68,8 @@ The ChatSpeed HUD provides a systems-level view of optimization in real time.
 - **Unsupported:** Not on a compatible target  
 
 Designed to feel like internal performance tooling used by engineers.
+
+---
 
 ## 🔧 Installation & Usage
 
@@ -78,7 +89,7 @@ npm run build
 ```
 
 4. **Load in Chrome**
-  - Go to chrome://extensions
+  - Go to `chrome://extensions`
   - Enable Developer Mode
   - Click Load unpacked
   - Select the dist folder
@@ -92,9 +103,6 @@ npm run build
 - Returns a modified JSON payload before React renders it
 
 This ensures performance optimization happens before rendering, not after.
-
-Most tools clean the UI after it slows down.  
-ChatSpeed prevents the slowdown before it even happens.
 
 For deeper details, see ARCHITECTURE.md
 
@@ -116,7 +124,3 @@ This ensures the core "Surgical Graft" logic remains open and free for the commu
 
 > Most tools try to clean the UI.  
 > ChatSpeed fixes the problem before the UI even sees it.
-
-## 🖥️ Demo
-
-*(Coming soon — before/after performance comparison)*
