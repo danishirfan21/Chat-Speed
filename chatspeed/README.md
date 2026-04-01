@@ -76,6 +76,7 @@ Designed to feel like internal performance tooling used by engineers.
 1. **Clone the repo**
 ```bash
 git clone https://github.com/danishirfan21/Chat-Speed.git
+cd chatspeed
 ```
 
 2. **Install dependencies**
