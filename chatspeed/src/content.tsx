@@ -266,7 +266,7 @@ function showOptimizationToast() {
   iconSpan.style.display = 'inline-block';
   
   const textSpan = document.createElement('span');
-  textSpan.textContent = 'Network Optimization';
+  textSpan.textContent = 'INTERCEPTING STREAM';
   textSpan.style.color = '#E8F0FF';
   
   text.appendChild(iconSpan);
