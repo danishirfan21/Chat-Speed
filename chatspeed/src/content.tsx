@@ -94,13 +94,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     dispatchToggleEvent(false);
 
-    if (currentTabId !== null) {
-      chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.METRICS_RESET,
-        tabId: currentTabId,
-      });
-    }
-
     if (observer) {
       observer.disconnect();
       observer = null;
