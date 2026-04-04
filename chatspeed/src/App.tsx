@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NeoSkeuomorphicToggle from './components/reactor/neo-toggle';
 import ScanningLineAnimation from './components/reactor/scanning-line';
 import { MESSAGE_TYPES } from './lib/messages';
+import { LoadingMetricValue } from './components/reactor/loading-metric-value';
 
 const SUPPORTED_HOST_PATTERNS = ['chatgpt.com'];
 
@@ -20,8 +21,9 @@ const App = () => {
   const [isActive, setIsActive] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
   const [tabId, setTabId] = useState<number | null>(null);
-  const [ramSaved, setRamSaved] = useState<string>("..."); 
-  const [nodesPruned, setNodesPruned] = useState(0);
+  const [ramSaved, setRamSaved] = useState<string | null>(null); 
+  const [nodesPruned, setNodesPruned] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // ─── Detect active tab ─────────────────────────────────────
   useEffect(() => {
@@ -65,14 +67,21 @@ const App = () => {
       { type: MESSAGE_TYPES.TOGGLE, tabId },
       (res) => {
         if (chrome.runtime.lastError) return;
-
-        setIsActive(res?.enabled ?? false);
+        const next = res?.enabled ?? false;
+        setIsActive(next);
+        
+        if (next) {
+          setIsLoading(true);
+        }
       }
     );
   }, [tabId, unsupported]);
 
   useEffect(() => {
     if (!isActive || tabId === null) return;
+
+    // Reset loading state when active
+    setIsLoading(true);
 
     const fetchState = () => {
       chrome.runtime.sendMessage(
@@ -91,6 +100,12 @@ const App = () => {
 
           setNodesPruned(value);
           setRamSaved(display);
+
+          const hasData =
+            (res?.nodesPruned ?? 0) > 0 ||
+            (res?.bytesSaved ?? 0) > 0;
+
+          setIsLoading(!hasData);
         }
       );
     };
@@ -277,15 +292,19 @@ const App = () => {
                 <div className="flex items-start justify-between mb-1.5 relative z-10">
                   <div className="flex-1">
                     <p className="metric-label">RAM Saved</p>
-                        <motion.p
-                          key={ramSaved}
-                          animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
-                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                          className="metric-value text-accent mt-1.5"
-                          style={{ color: '#00F5FF' }}
-                        >
-                          {ramSaved === "..." ? ramSaved : `~${ramSaved}`}
-                        </motion.p>
+                    {isLoading || ramSaved === null ? (
+                      <LoadingMetricValue label="ram" />
+                    ) : (
+                      <motion.p
+                        key={ramSaved}
+                        animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="metric-value text-accent mt-1.5"
+                        style={{ color: '#00F5FF' }}
+                      >
+                        {`~${ramSaved}`}
+                      </motion.p>
+                    )}
                       </div>
                       <motion.span
                         animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
@@ -307,15 +326,19 @@ const App = () => {
                     <div className="flex items-start justify-between mb-1.5 relative z-10">
                       <div className="flex-1">
                         <p className="metric-label">Nodes Pruned</p>
-                        <motion.p
-                          key={nodesPruned}
-                          animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
-                          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                          className="metric-value text-primary mt-1.5"
-                          style={{ color: '#D4AF37' }}
-                        >
-                          {nodesPruned}
-                        </motion.p>
+                        {isLoading || nodesPruned === null ? (
+                          <LoadingMetricValue label="nodes" />
+                        ) : (
+                          <motion.p
+                            key={nodesPruned}
+                            animate={{ opacity: [0.7, 1], scale: [1.03, 1] }}
+                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                            className="metric-value text-primary mt-1.5"
+                            style={{ color: '#D4AF37' }}
+                          >
+                            {nodesPruned}
+                          </motion.p>
+                        )}
                       </div>
                       <motion.span
                         animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
