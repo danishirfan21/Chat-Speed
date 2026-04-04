@@ -81,6 +81,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       waitForMain();
     }
 
+    checkAndPruneImmediately();
+
     sendResponse({ ok: true });
     return;
   }
@@ -357,6 +359,25 @@ function schedulePrune() {
       isPruning = false;
     }, 2500);
   }, 1000);
+}
+
+function checkAndPruneImmediately() {
+  if (isTemporaryChat()) return;
+  if (isStreaming()) return;
+  if (getMessageCount() <= THRESHOLD) return;
+
+  console.log("[ChatSpeed] Immediate prune on enable");
+
+  isPruning = true;
+
+  triggerSoftReset();
+
+  setTimeout(() => {
+    if (getMessageCount() > THRESHOLD) {
+      window.location.reload();
+    }
+    isPruning = false;
+  }, 500);
 }
 
 function attachTrimmer(main: Element) {
