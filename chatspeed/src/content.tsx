@@ -329,7 +329,7 @@ function getMessageCount() {
 }
 
 function isStreaming() {
-  return !!document.querySelector('.result-streaming');
+  return !!document.querySelector('[data-testid="stop-button"]');
 }
 
 let pruneDebounceTimer: any = null;
@@ -361,7 +361,7 @@ function schedulePrune() {
 
 function attachTrimmer(main: Element) {
   observer = new MutationObserver(() => {
-    if (!enabled) return; 
+    if (!enabled) return;
     if (getMessageCount() > THRESHOLD) schedulePrune();
   });
   observer.observe(main, { childList: true, subtree: true });
