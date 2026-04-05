@@ -310,6 +310,20 @@ function showOptimizationToast() {
   }, 3000);
 }
 
+function maybeShowOptimizationToast() {
+  if (currentTabId === null) return;
+
+  chrome.runtime.sendMessage(
+    { type: MESSAGE_TYPES.IS_POPUP_OPEN, tabId: currentTabId },
+    (res) => {
+      if (chrome.runtime.lastError) return;
+      if (!res?.isOpen) {
+        showOptimizationToast();
+      }
+    }
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 🧬 CORE STABLE LOGIC (Do not change)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -342,7 +356,7 @@ function schedulePrune() {
     console.log(`[ChatSpeed] Pruning at ${getMessageCount()} messages.`);
     isPruning = true;
 
-    showOptimizationToast();
+    maybeShowOptimizationToast();
     triggerSoftReset();
 
     setTimeout(() => {

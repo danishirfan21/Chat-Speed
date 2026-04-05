@@ -32,6 +32,10 @@ async function setState(tabId: number, state: TabState): Promise<void> {
 async function clearState(tabId: number): Promise<void> {
   await chrome.storage.session.remove(getStorageKey(tabId));
 }
+
+// Track popup state per tab
+let popupOpenTabs = new Set<number>();
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const tabId: number | undefined = msg.tabId ?? sender.tab?.id;
 
@@ -41,9 +45,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return;
   }
 
-  if (msg.type === 'GET_TAB_ID') {
+  if (msg.type === MESSAGE_TYPES.GET_TAB_ID) {
     sendResponse({ tabId });
     return;
+  }
+
+  // Popup state tracking
+  if (msg.type === MESSAGE_TYPES.POPUP_OPEN) {
+    popupOpenTabs.add(tabId);
+    return;
+  }
+
+  if (msg.type === MESSAGE_TYPES.POPUP_CLOSE) {
+    popupOpenTabs.delete(tabId);
+    return;
+  }
+
+  if (msg.type === MESSAGE_TYPES.IS_POPUP_OPEN) {
+    sendResponse({ isOpen: popupOpenTabs.has(tabId) });
+    return true;
   }
 
   if (msg.type === MESSAGE_TYPES.GET_STATE) {
@@ -112,7 +132,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// ─── Re-push state after tab reload ──────────────────────────────────────────
+// Re-push state after tab reload
 // When a tab finishes loading, check if it was enabled. If so, re-send ENABLE
 // to the newly injected content script (which always starts fresh at disabled).
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
@@ -130,7 +150,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   }, 300);
 });
 
-// ─── Cleanup on tab close ────────────────────────────────────────────────────
+// Cleanup on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {
+  popupOpenTabs.delete(tabId); // important cleanup
   clearState(tabId);
 });

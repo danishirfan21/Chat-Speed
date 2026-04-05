@@ -117,6 +117,22 @@ const App = () => {
     return () => clearInterval(interval);
   }, [isActive, tabId]);
 
+  useEffect(() => {
+    if (tabId === null || unsupported) return;
+
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.POPUP_OPEN,
+      tabId,
+    });
+
+    return () => {
+      chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.POPUP_CLOSE,
+        tabId,
+      });
+    };
+  }, [tabId, unsupported]);
+
   return (
     <div className="w-[420px] h-[560px] overflow-hidden flex flex-col bg-background text-foreground vignette relative">
       {/* Background Gradient Mesh */}
