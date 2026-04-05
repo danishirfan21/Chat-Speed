@@ -80,11 +80,23 @@
       // 2. Trace back the last N messages from the current leaf
       const tailNodeIds = [];
       let curr = currentNodeId;
-      while (curr && mapping[curr] && tailNodeIds.length < MAX_MESSAGES) {
+
+      let visibleCount = 0;
+      const MAX_VISIBLE_MESSAGES = 4; // 2 user + 2 assistant
+
+      while (curr && mapping[curr] && visibleCount < MAX_VISIBLE_MESSAGES) {
+        const node = mapping[curr];
+        const role = node?.message?.author?.role;
+
         if (curr !== rootNodeId) {
-          tailNodeIds.unshift(curr); // Keep chronological order
+          tailNodeIds.unshift(curr);
+
+          if (role === "user" || role === "assistant") {
+            visibleCount++;
+          }
         }
-        curr = mapping[curr].parent;
+
+        curr = node.parent;
       }
 
       // 3. Stitch the oldest kept message to the Root Node

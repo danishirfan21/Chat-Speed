@@ -77,8 +77,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       const next: TabState = {
         ...current,
-        nodesPruned: current.nodesPruned + (msg.nodesPruned ?? 0),
-        bytesSaved: current.bytesSaved + (msg.bytesSaved ?? 0),
+        nodesPruned: msg.nodesPruned ?? 0,
+        bytesSaved: msg.bytesSaved ?? 0,
       };
 
       await setState(tabId, next);
