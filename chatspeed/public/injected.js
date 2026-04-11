@@ -77,26 +77,37 @@
 
       newMapping[rootNodeId] = { ...mapping[rootNodeId], children: [] };
 
-      // 2. Trace back the last N messages from the current leaf
-      const tailNodeIds = [];
+      // 2. Build full chain first
+      const fullChain = [];
       let curr = currentNodeId;
 
-      let visibleCount = 0;
-      const MAX_VISIBLE_MESSAGES = 4; // 2 user + 2 assistant
-
-      while (curr && mapping[curr] && visibleCount < MAX_VISIBLE_MESSAGES) {
-        const node = mapping[curr];
-        const role = node?.message?.author?.role;
-
+      while (curr && mapping[curr]) {
         if (curr !== rootNodeId) {
-          tailNodeIds.unshift(curr);
+          fullChain.unshift(curr);
+        }
+        curr = mapping[curr].parent;
+      }
 
-          if (role === "user" || role === "assistant") {
-            visibleCount++;
-          }
+      // 3. Pick last N visible (user/assistant) messages
+      const visibleNodes = [];
+      const MAX_VISIBLE_MESSAGES = 4;
+
+      for (let i = fullChain.length - 1; i >= 0; i--) {
+        const id = fullChain[i];
+        const role = mapping[id]?.message?.author?.role;
+
+        if (role === "user" || role === "assistant") {
+          visibleNodes.unshift(id);
         }
 
-        curr = node.parent;
+        if (visibleNodes.length >= MAX_VISIBLE_MESSAGES) break;
+      }
+
+      // 4. Keep Full Structure from first visible node onward
+      let tailNodeIds = [];
+      if (visibleNodes.length > 0) {
+        const startIdx = fullChain.indexOf(visibleNodes[0]);
+        tailNodeIds = fullChain.slice(startIdx);
       }
 
       // 3. Stitch the oldest kept message to the Root Node
