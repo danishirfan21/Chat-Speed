@@ -90,17 +90,24 @@
 
       // 3. Pick last N visible (user/assistant) messages
       const visibleNodes = [];
-      const MAX_VISIBLE_MESSAGES = 4;
+      let lastRole = null;
 
       for (let i = fullChain.length - 1; i >= 0; i--) {
         const id = fullChain[i];
-        const role = mapping[id]?.message?.author?.role;
+        const node = mapping[id];
+        const role = node?.message?.author?.role;
+        const hidden = node?.message?.metadata?.is_visually_hidden_from_conversation;
 
-        if (role === "user" || role === "assistant") {
-          visibleNodes.unshift(id);
-        }
+        // skip hidden/system
+        if (hidden || (role !== "user" && role !== "assistant")) continue;
 
-        if (visibleNodes.length >= MAX_VISIBLE_MESSAGES) break;
+        // enforce alternation
+        if (role === lastRole) continue;
+
+        visibleNodes.unshift(id);
+        lastRole = role;
+
+        if (visibleNodes.length >= 4) break;
       }
 
       // 4. Keep Full Structure from first visible node onward
