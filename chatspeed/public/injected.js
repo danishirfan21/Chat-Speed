@@ -177,7 +177,7 @@
       return new Response(JSON.stringify(json), {
         status: response.status,
         statusText: response.statusText,
-        headers: { 'Content-Type': 'application/json' }
+        headers: new Headers(response.headers)
       });
     } catch (err) {
       console.error('[ChatSpeed] Surgery failed:', err);
