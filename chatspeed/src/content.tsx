@@ -344,13 +344,24 @@ function isStreaming() {
 let pruneDebounceTimer: any = null;
 let isPruning = false;
 
+let pendingPrune = false;
+let lastStreamingState = false;
+
 function schedulePrune() {
   if (isPruning || isTemporaryChat()) return;
   if (pruneDebounceTimer) clearTimeout(pruneDebounceTimer);
 
   pruneDebounceTimer = setTimeout(() => {
     pruneDebounceTimer = null;
-    if (isStreaming()) return;
+
+    const streaming = isStreaming();
+
+    if (streaming) {
+      pendingPrune = true;
+      lastStreamingState = true;
+      return;
+    }
+
     if (getMessageCount() <= THRESHOLD) return;
 
     console.log(`[ChatSpeed] Pruning at ${getMessageCount()} messages.`);
@@ -390,8 +401,28 @@ function checkAndPruneImmediately() {
 function attachTrimmer(main: Element) {
   observer = new MutationObserver(() => {
     if (!enabled) return;
-    if (getMessageCount() > THRESHOLD) schedulePrune();
+
+    const streaming = isStreaming();
+
+    if (lastStreamingState && !streaming) {
+      lastStreamingState = false;
+
+      if (pendingPrune && getMessageCount() > THRESHOLD) {
+        pendingPrune = false;
+        schedulePrune();
+        return;
+      }
+
+      pendingPrune = false;
+    }
+
+    lastStreamingState = streaming;
+
+    if (getMessageCount() > THRESHOLD) {
+      schedulePrune();
+    }
   });
+
   observer.observe(main, { childList: true, subtree: true });
 }
 
