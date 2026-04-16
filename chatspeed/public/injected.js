@@ -49,11 +49,13 @@
     }
 
     // Only intercept GET requests to the conversation load endpoint
+    const pathname = new URL(url, window.location.origin).pathname;
+    const method = args[1]?.method || "GET";
+
     const isConversationLoad =
-      url.includes('/backend-api/conversation/') &&
-      !url.includes('/backend-api/conversation/gen_title') &&
-      !url.includes('/backend-api/conversation/message') &&
-      (!args[1] || !args[1].method || args[1].method === 'GET');
+      /^\/backend-api\/conversation\/[^\/]+$/.test(pathname) &&
+      !pathname.endsWith("/init") &&
+      method === 'GET';
 
     if (!isConversationLoad) {
       return originalFetch.apply(this, args);
