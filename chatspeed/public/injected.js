@@ -40,6 +40,11 @@
     );
   });
 
+  if (window.location.search.includes("temporary-chat=true")) {
+    console.log("[ChatSpeed] Skipping fetch override in temporary chat mode");
+    return;
+  }
+
   window.fetch = async function (...args) {
     const url = (args[0]?.url || args[0])?.toString?.() || "";
 
