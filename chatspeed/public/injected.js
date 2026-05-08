@@ -14,6 +14,10 @@
   if (window.__CHAT_SPEED_INJECTED__) return;
   window.__CHAT_SPEED_INJECTED__ = true;
 
+  if (window.location.search.includes("temporary-chat=true")) {
+    return;
+  }
+
   const MAX_MESSAGES = 4;
   const originalFetch = window.fetch;
   const LS_KEY = '__chatspeed_enabled__';
@@ -31,161 +35,124 @@
 
   log("Initial state from sessionStorage:", chatspeedEnabled);
 
-  // RUNTIME SOURCE OF TRUTH
-  window.addEventListener("message", function (event) {
-    if (event.source !== window) return;
-    if (event.data?.source !== "chatspeed") return;
-    if (event.data?.type !== "toggle") return;
+  let interceptorInstalled = false;
 
-    const nextEnabled = !!event.data.enabled;
-
-    if (chatspeedEnabled === nextEnabled) return;
-
-    chatspeedEnabled = nextEnabled;
-    errorCount = 0; // Reset error count on manual toggle
-
-    log("Interceptor " + (chatspeedEnabled ? "ENABLED" : "DISABLED"));
-  });
-
-  if (window.location.search.includes("temporary-chat=true")) {
-    log("Skipping fetch override in temporary chat mode");
-    return;
+  if (chatspeedEnabled) {
+    enableInterceptor();
   }
 
-  window.fetch = new Proxy(originalFetch, {
-    apply(target, thisArg, args) {
-      const url = (args[0]?.url || args[0])?.toString?.() || "";
+  function enableInterceptor() {
+    if (interceptorInstalled) return;
 
-      // TRUST ONLY MEMORY FLAG
-      if (!chatspeedEnabled) {
-        return Reflect.apply(target, thisArg, args);
-      }
+    window.fetch = new Proxy(originalFetch, {
+      apply(target, thisArg, args) {
+        const url = (args[0]?.url || args[0])?.toString?.() || "";
 
-      // Only intercept GET requests to the conversation load endpoint
-      let pathname = "";
-      try {
-        pathname = new URL(url, window.location.origin).pathname;
-      } catch (err) {
-        return Reflect.apply(target, thisArg, args);
-      }
-
-      const method = args[1]?.method || "GET";
-
-      const isConversationLoad =
-        /^\/backend-api\/conversation\/[^\/]+$/.test(pathname) &&
-        method === 'GET';
-
-      if (!isConversationLoad) {
-        return Reflect.apply(target, thisArg, args);
-      }
-
-      return (async () => {
-        const response = await Reflect.apply(target, thisArg, args);
-
+        let pathname = "";
         try {
-          const contentType = response.headers.get("content-type");
-          if (!contentType || !contentType.includes("application/json")) {
-            return response;
-          }
+          pathname = new URL(url, window.location.origin).pathname;
+        } catch {
+          return Reflect.apply(target, thisArg, args);
+        }
 
-          const cloned = response.clone();
-          const json = await cloned.json();
+        const method = args[1]?.method || "GET";
 
-          if (
-            !json ||
-            typeof json !== "object" ||
-            !json.mapping ||
-            typeof json.mapping !== "object" ||
-            !json.current_node
-          ) {
-            return response;
-          }
+        const isConversationLoad =
+          /^\/backend-api\/conversation\/[^\/]+$/.test(pathname) &&
+          method === "GET";
 
-          const mapping = json.mapping;
-          const mappingKeys = Object.keys(mapping);
-          const mappingSize = mappingKeys.length;
+        if (!isConversationLoad) {
+          return Reflect.apply(target, thisArg, args);
+        }
 
-          // Guard against small chats
-          if (mappingSize < 20) {
-            return response;
-          }
+        return (async () => {
+          const response = await Reflect.apply(target, thisArg, args);
 
-          const currentNodeId = json.current_node;
-          const newMapping = {};
-
-          // 1. Identify the Root Node (the node with no parent)
-          const rootNodeId = mappingKeys.find(id => mapping[id] && !mapping[id].parent);
-          if (!rootNodeId) return response;
-
-          newMapping[rootNodeId] = { ...mapping[rootNodeId], children: [] };
-
-          // 2. Build full chain first
-          const fullChain = [];
-          let curr = currentNodeId;
-
-          while (curr && mapping[curr]) {
-            if (curr !== rootNodeId) {
-              fullChain.unshift(curr);
+          try {
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              return response;
             }
-            curr = mapping[curr].parent;
-          }
 
-          // 3. Pick last N visible (user/assistant) messages
-          const visibleNodes = [];
-          let lastRole = null;
+            const cloned = response.clone();
+            const json = await cloned.json();
 
-          for (let i = fullChain.length - 1; i >= 0; i--) {
-            const id = fullChain[i];
-            const node = mapping[id];
-            const role = node?.message?.author?.role;
-            const hidden = node?.message?.metadata?.is_visually_hidden_from_conversation;
+            if (
+              !json ||
+              typeof json !== "object" ||
+              !json.mapping ||
+              typeof json.mapping !== "object" ||
+              !json.current_node
+            ) {
+              return response;
+            }
 
-            // skip hidden/system
-            if (hidden || (role !== "user" && role !== "assistant")) continue;
+            const mapping = json.mapping;
+            const mappingKeys = Object.keys(mapping);
+            const mappingSize = mappingKeys.length;
 
-            // enforce alternation
-            if (role === lastRole) continue;
+            if (mappingSize < 20) return response;
 
-            visibleNodes.unshift(id);
-            lastRole = role;
+            const currentNodeId = json.current_node;
+            const newMapping = {};
 
-            if (visibleNodes.length >= MAX_MESSAGES) break;
-          }
+            const rootNodeId = mappingKeys.find(id => mapping[id] && !mapping[id].parent);
+            if (!rootNodeId) return response;
 
-          // 4. Keep Full Structure from first visible node onward
-          let tailNodeIds = [];
-          if (visibleNodes.length > 0) {
-            const startIdx = fullChain.indexOf(visibleNodes[0]);
-            tailNodeIds = fullChain.slice(startIdx);
-          }
+            newMapping[rootNodeId] = { ...mapping[rootNodeId], children: [] };
 
-          // 3. Stitch the oldest kept message to the Root Node
-          if (tailNodeIds.length > 0) {
-            const oldestKeptId = tailNodeIds[0];
+            const fullChain = [];
+            let curr = currentNodeId;
 
-            // Graft: Root points to our first kept message
-            newMapping[rootNodeId].children = [oldestKeptId];
+            while (curr && mapping[curr]) {
+              if (curr !== rootNodeId) fullChain.unshift(curr);
+              curr = mapping[curr].parent;
+            }
 
-            // Build the chain with correct parent and children arrays
-            tailNodeIds.forEach((id, index) => {
-              const originalNode = mapping[id];
-              const nextId = tailNodeIds[index + 1] ?? null; // undefined → null
-              newMapping[id] = {
-                ...originalNode,
-                // First kept node's parent is the root; rest keep their original parent
-                parent: id === oldestKeptId ? rootNodeId : originalNode.parent,
-                // Point children only to the next node in chain; last node has no children
-                children: nextId ? [nextId] : []
-              };
-            });
-          }
+            const visibleNodes = [];
+            let lastRole = null;
 
-          const newMappingSize = Object.keys(newMapping).length;
-          const prunedCount = mappingSize - newMappingSize;
+            for (let i = fullChain.length - 1; i >= 0; i--) {
+              const id = fullChain[i];
+              const node = mapping[id];
+              const role = node?.message?.author?.role;
+              const hidden = node?.message?.metadata?.is_visually_hidden_from_conversation;
 
-          if (prunedCount <= 0) {
-            return response;
-          }
+              if (hidden || (role !== "user" && role !== "assistant")) continue;
+              if (role === lastRole) continue;
+
+              visibleNodes.unshift(id);
+              lastRole = role;
+
+              if (visibleNodes.length >= MAX_MESSAGES) break;
+            }
+
+            let tailNodeIds = [];
+            if (visibleNodes.length > 0) {
+              const startIdx = fullChain.indexOf(visibleNodes[0]);
+              tailNodeIds = fullChain.slice(startIdx);
+            }
+
+            if (tailNodeIds.length > 0) {
+              const oldestKeptId = tailNodeIds[0];
+              newMapping[rootNodeId].children = [oldestKeptId];
+
+              tailNodeIds.forEach((id, index) => {
+                const originalNode = mapping[id];
+                const nextId = tailNodeIds[index + 1] ?? null;
+
+                newMapping[id] = {
+                  ...originalNode,
+                  parent: id === oldestKeptId ? rootNodeId : originalNode.parent,
+                  children: nextId ? [nextId] : []
+                };
+              });
+            }
+
+            const newMappingSize = Object.keys(newMapping).length;
+            const prunedCount = mappingSize - newMappingSize;
+
+            if (prunedCount <= 0) return response;
 
           const newJson = { ...json, mapping: newMapping };
           log(`Scaled graph: ${mappingSize} → ${newMappingSize} nodes.`);
@@ -217,25 +184,63 @@
             "*"
           );
 
-          return new Response(JSON.stringify(newJson), {
-            status: response.status,
-            statusText: response.statusText,
-            headers: new Headers(response.headers)
-          });
-        } catch (err) {
-          errorCount++;
-          error('Surgery failed:', err);
+            return new Response(JSON.stringify(newJson), {
+              status: response.status,
+              statusText: response.statusText,
+              headers: new Headers(response.headers)
+            });
 
-          if (errorCount >= MAX_ERRORS) {
-            warn("Auto disabling due to errors");
-            chatspeedEnabled = false;
+          } catch (err) {
+            errorCount++;
+            if (errorCount >= MAX_ERRORS) {
+              chatspeedEnabled = false;
+              disableInterceptor();
+              warn("Auto disabling due to repeated errors");
+            }
+            return response;
           }
+        })();
+      }
+    });
 
-          return response;
-        }
-      })();
+    interceptorInstalled = true;
+    log("Interceptor INSTALLED");
+  }
+
+  function disableInterceptor() {
+    if (!interceptorInstalled) return;
+
+    if (window.fetch !== originalFetch) {
+      window.fetch = originalFetch;
     }
+    interceptorInstalled = false;
+
+    log("Interceptor REMOVED");
+  }
+
+  // RUNTIME SOURCE OF TRUTH
+  window.addEventListener("message", function (event) {
+    if (event.source !== window) return;
+    if (event.data?.source !== "chatspeed") return;
+    if (event.data?.type !== "toggle") return;
+
+    const nextEnabled = !!event.data.enabled;
+
+    if (chatspeedEnabled === nextEnabled) return;
+
+    chatspeedEnabled = nextEnabled;
+    errorCount = 0;
+
+    if (chatspeedEnabled) {
+      enableInterceptor();
+    } else {
+      disableInterceptor();
+    }
+
+    log("Interceptor " + (chatspeedEnabled ? "ENABLED" : "DISABLED"));
   });
+
+
 
   log('Fetch interceptor ready.');
 })();

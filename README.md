@@ -107,6 +107,24 @@ This ensures performance optimization happens before rendering, not after.
 
 For deeper details, see ARCHITECTURE.md
 
+## ⚠️ Quick Note for Power Users
+
+ChatSpeed only optimizes the active conversation you are currently viewing.  
+It does not intentionally modify the sidebar or your chat history list.
+
+If ChatGPT’s sidebar ever fails to load, it is usually related to a temporary session or Cloudflare verification hiccup.
+
+Quick reset:
+- Toggle ChatSpeed off/on
+- Refresh ChatGPT
+
+If the issue persists:
+- Log out and back into ChatGPT
+- Refresh the page again
+
+ChatSpeed is open source and still evolving.  
+If you find a reproducible bug, please open a GitHub Issue with console logs and reproduction steps 🛠️
+
 ## 🛡️ Privacy & Security
 
 ChatSpeed is open-source because trust is the primary metric.
