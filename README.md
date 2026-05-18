@@ -56,7 +56,7 @@ ChatSpeed prevents the slowdown before it even happens.
 
 ## 🖥️ Demo
 
-*(Coming soon — before/after performance comparison)*
+Watch ChatSpeed in action: [Demo Video Link](https://www.youtube.com/watch?v=acHwPFDIUSo)
 
 
 ## 🖥️ Dashboard Interface

@@ -6,6 +6,7 @@ const manifest = defineManifest({
   manifest_version: 3,
   name: 'ChatSpeed',
   version: '1.0.0',
+  description: 'Eliminates ChatGPT lag instantly by optimizing and pruning the conversation data stream in real-time.',
   icons: {
     "16": "icon16.png",
     "32": "icon32.png",
